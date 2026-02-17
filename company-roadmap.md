@@ -49,7 +49,8 @@ We operate as an Open Source ecosystem with a sustainable revenue model.
 
 ## 5. Products
 
-### Brier
+### Brier (Product)
+- **Name:** Brier (derived from Hubble codebase)
 - **Tagline:** Calibrate your fear. Debug your reality.
 - **Core Function:** Prediction log for anxiety/fear calibration
 - **Status:** Active development (derived from Hubble)

@@ -25,6 +25,7 @@ export const useOrbitStore = create(
       reminders: [],
       tags: ['Work', 'Family', 'Friends', 'Sports', 'Tech'],
       interactions: [],
+      reminders: [],
       
       // Add a new contact
       addContact: (contact) => {

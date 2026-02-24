@@ -13,6 +13,7 @@ import AddContactScreen from './screens/AddContactScreen';
 import AddInteractionScreen from './screens/AddInteractionScreen';
 import InsightsScreen from './screens/InsightsScreen';
 import MapScreen from './screens/MapScreen';
+import RemindersScreen from './screens/RemindersScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -85,6 +86,14 @@ export default function App() {
             options={{ 
               tabBarLabel: 'Map',
               tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>🗺️</Text>
+            }}
+          />
+          <Tab.Screen 
+            name="Reminders" 
+            component={RemindersScreen}
+            options={{ 
+              tabBarLabel: 'Reminders',
+              tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>⏰</Text>
             }}
           />
         </Tab.Navigator>

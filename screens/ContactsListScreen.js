@@ -1,21 +1,25 @@
 // Contacts List Screen
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, TextInput
+  View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, TextInput, ScrollView
 } from 'react-native';
 import { useOrbitStore, RELATIONSHIP_TYPES } from '../stores/orbitStore';
 
 export default function ContactsListScreen({ navigation }) {
   const contacts = useOrbitStore((state) => state.contacts);
+  const tags = useOrbitStore((state) => state.tags);
   const [search, setSearch] = useState('');
+  const [selectedTag, setSelectedTag] = useState(null);
   
-  const filteredContacts = contacts.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredContacts = contacts.filter(c => {
+    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
+    const matchesTag = !selectedTag || (c.tags && c.tags.includes(selectedTag));
+    return matchesSearch && matchesTag;
+  });
 
   const renderContact = ({ item }) => {
     const type = RELATIONSHIP_TYPES[item.type] || RELATIONSHIP_TYPES.acquaintance;
-    const healthScore = navigation.state?.params?.healthScores?.[item.id] || 100;
+    const healthScore = item.healthScore || 100;
     
     return (
       <TouchableOpacity 
@@ -28,6 +32,15 @@ export default function ContactsListScreen({ navigation }) {
         <View style={styles.info}>
           <Text style={styles.name}>{item.name}</Text>
           <Text style={styles.detail}>{type.label}</Text>
+          {item.tags && item.tags.length > 0 && (
+            <View style={styles.tagRow}>
+              {item.tags.slice(0, 3).map(tag => (
+                <View key={tag} style={styles.miniTag}>
+                  <Text style={styles.miniTagText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
         <View style={styles.healthContainer}>
           <View style={[
@@ -53,6 +66,27 @@ export default function ContactsListScreen({ navigation }) {
         />
       </View>
       
+      {/* Tag Filter */}
+      <View style={styles.tagFilterContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <TouchableOpacity
+            style={[styles.tagChip, !selectedTag && styles.tagChipActive]}
+            onPress={() => setSelectedTag(null)}
+          >
+            <Text style={[styles.tagChipText, !selectedTag && styles.tagChipTextActive]}>All</Text>
+          </TouchableOpacity>
+          {tags.map(tag => (
+            <TouchableOpacity
+              key={tag}
+              style={[styles.tagChip, selectedTag === tag && styles.tagChipActive]}
+              onPress={() => setSelectedTag(selectedTag === tag ? null : tag)}
+            >
+              <Text style={[styles.tagChipText, selectedTag === tag && styles.tagChipTextActive]}>{tag}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+      
       <FlatList
         data={filteredContacts}
         keyExtractor={(item) => item.id}
@@ -61,9 +95,9 @@ export default function ContactsListScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>👥</Text>
-            <Text style={styles.emptyText}>No contacts yet</Text>
+            <Text style={styles.emptyText}>No contacts found</Text>
             <Text style={styles.emptySubtext}>
-              Add people to start mapping your relationships
+              {selectedTag ? `No contacts with tag "${selectedTag}"` : 'Add people to start mapping your relationships'}
             </Text>
           </View>
         }
@@ -89,13 +123,35 @@ function getHealthColor(score) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#16213e' },
-  searchContainer: { padding: 16 },
+  searchContainer: { padding: 16, paddingBottom: 8 },
   search: {
     backgroundColor: '#1a1a2e',
     color: '#fff',
     padding: 12,
     borderRadius: 12,
     fontSize: 16,
+  },
+  tagFilterContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  tagChip: {
+    backgroundColor: '#1a1a2e',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  tagChipActive: {
+    backgroundColor: '#E53E3E',
+  },
+  tagChipText: {
+    color: '#A0AEC0',
+    fontSize: 14,
+  },
+  tagChipTextActive: {
+    color: '#fff',
+    fontWeight: '600',
   },
   list: { padding: 16, paddingTop: 0 },
   card: {
@@ -117,6 +173,16 @@ const styles = StyleSheet.create({
   info: { flex: 1, marginLeft: 12 },
   name: { color: '#fff', fontSize: 16, fontWeight: '600' },
   detail: { color: '#A0AEC0', fontSize: 14, marginTop: 2 },
+  tagRow: { flexDirection: 'row', marginTop: 4, flexWrap: 'wrap' },
+  miniTag: {
+    backgroundColor: '#2D3748',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginRight: 4,
+    marginTop: 4,
+  },
+  miniTagText: { color: '#A0AEC0', fontSize: 10 },
   healthBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -126,7 +192,7 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: 60 },
   emptyEmoji: { fontSize: 48, marginBottom: 16 },
   emptyText: { color: '#fff', fontSize: 18, fontWeight: '600' },
-  emptySubtext: { color: '#A0AEC0', marginTop: 8 },
+  emptySubtext: { color: '#A0AEC0', marginTop: 8, textAlign: 'center' },
   fab: {
     position: 'absolute', right: 20, bottom: 20,
     width: 60, height: 60, borderRadius: 30,
@@ -134,5 +200,3 @@ const styles = StyleSheet.create({
   },
   fabText: { color: '#fff', fontSize: 30, fontWeight: '300' },
 });
-
-import { useState } from 'react';

@@ -22,6 +22,7 @@ export const useOrbitStore = create(
   persist(
     (set, get) => ({
       contacts: [],
+      tags: ['Work', 'Family', 'Friends', 'Sports', 'Tech'],
       interactions: [],
       
       // Add a new contact
@@ -50,6 +51,19 @@ export const useOrbitStore = create(
       },
       
       // Delete contact
+      // Add a tag\
+      addTag: (tag) => {\
+        set((state) => ({\
+          tags: state.tags.includes(tag) ? state.tags : [...state.tags, tag]\
+        }));\
+      },\
+\
+      // Remove a tag\
+      removeTag: (tag) => {\
+        set((state) => ({\
+          tags: state.tags.filter(t => t !== tag)\
+        }));\
+      },
       deleteContact: (id) => {
         set((state) => ({
           contacts: state.contacts.filter((c) => c.id !== id),

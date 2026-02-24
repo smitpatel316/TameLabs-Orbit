@@ -7,10 +7,19 @@ import { useOrbitStore, RELATIONSHIP_TYPES, ENERGY_LEVELS } from '../stores/orbi
 
 export default function AddContactScreen({ navigation }) {
   const addContact = useOrbitStore((state) => state.addContact);
+  const availableTags = useOrbitStore((state) => state.tags);
   const [name, setName] = useState('');
   const [type, setType] = useState('friend');
   const [notes, setNotes] = useState('');
-  const [tags, setTags] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
+
+  const toggleTag = (tag) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
 
   const handleSubmit = () => {
     if (!name.trim()) {
@@ -22,7 +31,7 @@ export default function AddContactScreen({ navigation }) {
       name: name.trim(),
       type,
       notes,
-      tags,
+      tags: selectedTags,
     });
     
     navigation.goBack();
@@ -59,6 +68,27 @@ export default function AddContactScreen({ navigation }) {
                   styles.typeLabel,
                   type === key && styles.typeLabelActive
                 ]}>{value.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.label}>Tags</Text>
+          <View style={styles.tags}>
+            {availableTags.map(tag => (
+              <TouchableOpacity
+                key={tag}
+                style={[
+                  styles.tagButton,
+                  selectedTags.includes(tag) && styles.tagButtonActive
+                ]}
+                onPress={() => toggleTag(tag)}
+              >
+                <Text style={[
+                  styles.tagLabel,
+                  selectedTags.includes(tag) && styles.tagLabelActive
+                ]}>{tag}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -114,6 +144,22 @@ const styles = StyleSheet.create({
   typeEmoji: { fontSize: 16, marginRight: 6 },
   typeLabel: { color: '#A0AEC0', fontSize: 12 },
   typeLabelActive: { color: '#fff' },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4 },
+  tagButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    margin: 4,
+    backgroundColor: '#1a1a2e',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#2D3748',
+  },
+  tagButtonActive: {
+    backgroundColor: '#E53E3E',
+    borderColor: '#E53E3E',
+  },
+  tagLabel: { color: '#A0AEC0', fontSize: 14 },
+  tagLabelActive: { color: '#fff', fontWeight: '600' },
   submit: {
     backgroundColor: '#E53E3E',
     paddingVertical: 16,

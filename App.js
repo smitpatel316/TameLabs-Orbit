@@ -14,6 +14,7 @@ import AddInteractionScreen from './screens/AddInteractionScreen';
 import InsightsScreen from './screens/InsightsScreen';
 import MapScreen from './screens/MapScreen';
 import RemindersScreen from './screens/RemindersScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -94,6 +95,14 @@ export default function App() {
             options={{ 
               tabBarLabel: 'Reminders',
               tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>⏰</Text>
+            }}
+          />
+          <Tab.Screen 
+            name="Settings" 
+            component={SettingsScreen}
+            options={{ 
+              tabBarLabel: 'Settings',
+              tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>⚙️</Text>
             }}
           />
         </Tab.Navigator>

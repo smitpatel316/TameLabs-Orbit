@@ -1,11 +1,10 @@
 // Insights Screen
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { useOrbitStore, RELATIONSHIP_TYPES } from '../stores/orbitStore';
 
 export default function InsightsScreen() {
   const contacts = useOrbitStore((state) => state.contacts);
-  const interactions = useOrbitStore((state) => state.interactions);
   const getStats = useOrbitStore((state) => state.getStats);
   const stats = getStats();
   
@@ -13,6 +12,41 @@ export default function InsightsScreen() {
     .map(c => ({ ...c, health: Math.floor(Math.random() * 100) }))
     .filter(c => c.health < 60)
     .slice(0, 5);
+
+  // Get upcoming birthdays (next 30 days)
+  const upcomingBirthdays = useMemo(() => {
+    const today = new Date();
+    const thirtyDaysLater = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+    
+    return contacts
+      .filter(c => c.birthday)
+      .map(c => {
+        const [month, day] = c.birthday.split('/').map(Number);
+        const birthdayThisYear = new Date(today.getFullYear(), month - 1, day);
+        
+        // If birthday already passed this year, check next year
+        if (birthdayThisYear < today) {
+          birthdayThisYear.setFullYear(today.getFullYear() + 1);
+        }
+        
+        return { ...c, birthdayDate: birthdayThisYear };
+      })
+      .filter(c => c.birthdayDate >= today && c.birthdayDate <= thirtyDaysLater)
+      .sort((a, b) => a.birthdayDate - b.birthdayDate)
+      .slice(0, 5);
+  }, [contacts]);
+
+  // Interaction streaks
+  const streaks = useMemo(() => {
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    return contacts.map(c => {
+      const lastInteraction = c.lastInteraction ? new Date(c.lastInteraction) : null;
+      const daysSince = lastInteraction ? Math.floor((now - lastInteraction) / (24 * 60 * 60 * 1000)) : 999;
+      return { ...c, daysSince };
+    }).sort((a, b) => a.daysSince - b.daysSince).slice(0, 5);
+  }, [contacts]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -23,6 +57,30 @@ export default function InsightsScreen() {
             <View style={styles.stat}><Text style={styles.statValue}>{stats.totalContacts}</Text><Text style={styles.statLabel}>Contacts</Text></View>
             <View style={styles.stat}><Text style={styles.statValue}>{stats.totalInteractions}</Text><Text style={styles.statLabel}>Interactions</Text></View>
           </View>
+        </View>
+
+        {upcomingBirthdays.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.title}>🎂 Upcoming Birthdays</Text>
+            {upcomingBirthdays.map(c => (
+              <View key={c.id} style={styles.birthdayRow}>
+                <Text style={styles.birthdayName}>{c.name}</Text>
+                <Text style={styles.birthdayDate}>{c.birthday}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.card}>
+          <Text style={styles.title}>🔥 Recent Contact</Text>
+          {streaks.map(c => (
+            <View key={c.id} style={styles.streakRow}>
+              <Text style={styles.streakName}>{c.name}</Text>
+              <Text style={styles.streakDays}>
+                {c.daysSince === 0 ? 'Today' : c.daysSince === 1 ? 'Yesterday' : `${c.daysSince} days ago`}
+              </Text>
+            </View>
+          ))}
         </View>
 
         <View style={styles.card}>
@@ -70,6 +128,12 @@ const styles = StyleSheet.create({
   stat: { alignItems: 'center' },
   statValue: { color: '#fff', fontSize: 32, fontWeight: 'bold' },
   statLabel: { color: '#A0AEC0', fontSize: 12, marginTop: 4 },
+  birthdayRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#2D3748' },
+  birthdayName: { color: '#fff' },
+  birthdayDate: { color: '#E53E3E', fontWeight: 'bold' },
+  streakRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#2D3748' },
+  streakName: { color: '#fff' },
+  streakDays: { color: '#38A169' },
   typeRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#2D3748' },
   typeEmoji: { fontSize: 20, marginRight: 12 },
   typeName: { flex: 1, color: '#fff' },

@@ -23,7 +23,7 @@ export const useOrbitStore = create(
     (set, get) => ({
       contacts: [],
       reminders: [],
-      tags: ['Work', 'Family', 'Friends', 'Sports', 'Tech'],
+      tags: ['Work', 'Family', 'Friends', 'Sports', 'Tech'],      groups: [],
       interactions: [],
       reminders: [],
       
@@ -66,6 +66,16 @@ export const useOrbitStore = create(
         set((state) => ({\
           tags: state.tags.filter(t => t !== tag)\
         }));\
+      },
+      // Add group
+      addGroup: (name) => {
+        const newGroup = { id: Date.now().toString(), name };
+        set((state) => ({ groups: [...state.groups, newGroup] }));
+      },
+
+      // Delete group
+      deleteGroup: (id) => {
+        set((state) => ({ groups: state.groups.filter(g => g.id !== id) }));
       },
       deleteContact: (id) => {
         set((state) => ({

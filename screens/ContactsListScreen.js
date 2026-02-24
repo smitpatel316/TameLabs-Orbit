@@ -11,8 +11,13 @@ export default function ContactsListScreen({ navigation }) {
   const [search, setSearch] = useState('');
   const [selectedTag, setSelectedTag] = useState(null);
   
+  // Enhanced search - search by name, notes, tags
   const filteredContacts = contacts.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
+    const searchLower = search.toLowerCase();
+    const matchesSearch = !search || 
+      c.name.toLowerCase().includes(searchLower) ||
+      (c.notes && c.notes.toLowerCase().includes(searchLower)) ||
+      (c.tags && c.tags.some(t => t.toLowerCase().includes(searchLower)));
     const matchesTag = !selectedTag || (c.tags && c.tags.includes(selectedTag));
     return matchesSearch && matchesTag;
   });
@@ -59,7 +64,7 @@ export default function ContactsListScreen({ navigation }) {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.search}
-          placeholder="Search contacts..."
+          placeholder="Search by name, notes, tags..."
           placeholderTextColor="#718096"
           value={search}
           onChangeText={setSearch}

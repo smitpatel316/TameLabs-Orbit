@@ -22,6 +22,7 @@ export const useOrbitStore = create(
   persist(
     (set, get) => ({
       contacts: [],
+      reminders: [],
       tags: ['Work', 'Family', 'Friends', 'Sports', 'Tech'],
       interactions: [],
       
@@ -34,6 +35,7 @@ export const useOrbitStore = create(
           healthScore: 100,
           createdAt: new Date().toISOString(),
           lastInteraction: null,
+          birthday: null,
         };
         set((state) => ({
           contacts: [newContact, ...state.contacts],

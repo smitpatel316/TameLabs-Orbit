@@ -11,6 +11,7 @@ export default function AddContactScreen({ navigation }) {
   const [name, setName] = useState('');
   const [type, setType] = useState('friend');
   const [notes, setNotes] = useState('');
+  const [birthday, setBirthday] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
 
   const toggleTag = (tag) => {
@@ -32,6 +33,7 @@ export default function AddContactScreen({ navigation }) {
       type,
       notes,
       tags: selectedTags,
+      birthday: birthday || null,
     });
     
     navigation.goBack();
@@ -103,6 +105,17 @@ export default function AddContactScreen({ navigation }) {
             value={notes}
             onChangeText={setNotes}
             multiline
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.label}>Birthday (optional)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="MM/DD"
+            placeholderTextColor="#718096"
+            value={birthday}
+            onChangeText={setBirthday}
           />
         </View>
 

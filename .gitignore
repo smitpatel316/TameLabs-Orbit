@@ -1,0 +1,11 @@
+node_modules/
+.expo/
+dist/
+web-build/
+.DS_Store
+.env
+*.tsbuildinfo
+/ios
+/android
+_archived_js/
+package-lock.json

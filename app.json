@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Orbit",
+    "slug": "orbit",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.tamelabs.orbit" },
+    "android": { "package": "com.tamelabs.orbit" },
+    "web": { "bundler": "metro" },
+    "plugins": ["expo-sqlite"]
+  }
+}

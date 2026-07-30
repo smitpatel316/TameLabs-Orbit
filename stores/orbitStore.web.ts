@@ -38,6 +38,8 @@ const safeSave = (state: any) => {
 
 const initialData = { contacts: [], interactions: [], tags: ['Work','Family','Friends'], groups: [], reminders: [] };
 
+type BulkResult = { imported: number; skipped: number; importedContacts: Contact[] };
+
 type OrbitState = {
   contacts: Contact[]; interactions: Interaction[]; tags: string[]; groups: Group[]; reminders: Reminder[];
   addContact: (c: any) => Contact;
@@ -54,6 +56,7 @@ type OrbitState = {
   addReminder: (r: any) => Reminder;
   toggleReminder: (id: string) => void;
   deleteReminder: (id: string) => void;
+  bulkImportContacts: (incoming: { name: string; birthday?: string | null; notes?: string; tags?: string[] }[]) => BulkResult;
 };
 
 let memoryState: OrbitState = (() => {
@@ -121,6 +124,27 @@ export const useOrbitStore = (selector?: any) => {
     addReminder: (r: any) => { const rem: Reminder={id:'r_'+Date.now(), contactId:r.contactId, message:r.message, dueDate:r.dueDate||new Date().toISOString(), done:false, createdAt:new Date().toISOString()}; memoryState.reminders=[rem,...memoryState.reminders]; safeSave(memoryState); notify(); return rem; },
     toggleReminder: (id: string) => { memoryState.reminders=memoryState.reminders.map(rr=>rr.id===id?{...rr,done:!rr.done}:rr); safeSave(memoryState); notify(); },
     deleteReminder: (id: string) => { memoryState.reminders=memoryState.reminders.filter(rr=>rr.id!==id); safeSave(memoryState); notify(); },
+    bulkImportContacts: (incoming: any[]) => {
+      const norm = (n: string) => n.trim().toLowerCase().replace(/\s+/g,' ');
+      const existingNorm = new Set<string>(memoryState.contacts.map((c:any)=>norm(c.name)));
+      const newOnes: Contact[] = [];
+      let skipped = 0;
+      const seen = new Set<string>();
+      for (const it of incoming) {
+        const nm = it.name?.trim();
+        if (!nm || nm.length<1 || nm.length>80) { skipped++; continue; }
+        const key = norm(nm);
+        if (existingNorm.has(key) || seen.has(key)) { skipped++; continue; }
+        seen.add(key);
+        const contact: Contact = { id:'c_'+Date.now()+'_'+newOnes.length+'_'+Math.random().toString(36).slice(2,5), name:nm, type:'acquaintance' as any, energy:'neutral' as any, healthScore:100, createdAt:new Date().toISOString(), lastInteraction:null, birthday: it.birthday||null, notes: it.notes||'', tags: it.tags||[] };
+        newOnes.push(contact);
+      }
+      if (newOnes.length) {
+        memoryState.contacts = [...newOnes.reverse(), ...memoryState.contacts];
+        safeSave(memoryState); notify();
+      }
+      return { imported: newOnes.length, skipped, importedContacts: newOnes };
+    },
   };
 
   // Merge methods into memoryState for selector access

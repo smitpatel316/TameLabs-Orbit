@@ -70,6 +70,7 @@ interface OrbitState {
   addReminder: (r: Partial<Reminder> & { contactId: string; message: string }) => Reminder;
   toggleReminder: (id: string) => void;
   deleteReminder: (id: string) => void;
+  bulkImportContacts: (contacts: { name: string; birthday?: string | null; notes?: string; tags?: string[] }[]) => { imported: number; skipped: number; importedContacts: Contact[] };
 }
 
 export const useOrbitStore = create<OrbitState>()(
@@ -230,6 +231,38 @@ export const useOrbitStore = create<OrbitState>()(
 
       deleteReminder: (id) => {
         set((s) => ({ reminders: s.reminders.filter((r) => r.id !== id) }));
+      },
+
+      bulkImportContacts: (incoming) => {
+        const norm = (n: string) => n.trim().toLowerCase().replace(/\s+/g, ' ');
+        const existingNorm = new Set<string>(get().contacts.map((c) => norm(c.name)));
+        const newOnes: Contact[] = [];
+        let skipped = 0;
+        const seenInBatch = new Set<string>();
+        for (const item of incoming) {
+          const nm = item.name?.trim();
+          if (!nm || nm.length < 1 || nm.length > 80) { skipped++; continue; }
+          const key = norm(nm);
+          if (existingNorm.has(key) || seenInBatch.has(key)) { skipped++; continue; }
+          seenInBatch.add(key);
+          const now = new Date().toISOString();
+          newOnes.push({
+            id: Date.now().toString() + Math.random().toString(36).slice(2, 6) + newOnes.length,
+            name: nm,
+            type: 'acquaintance',
+            energy: 'neutral',
+            healthScore: 100,
+            createdAt: now,
+            lastInteraction: null,
+            birthday: (item.birthday as any) || null,
+            notes: item.notes || '',
+            tags: item.tags || [],
+          });
+        }
+        if (newOnes.length) {
+          set((s) => ({ contacts: [...newOnes.reverse(), ...s.contacts] }));
+        }
+        return { imported: newOnes.length, skipped, importedContacts: newOnes };
       },
     }),
     {

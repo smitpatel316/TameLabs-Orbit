@@ -12,6 +12,7 @@ import InsightsScreen from './screens/InsightsScreen';
 import MapScreen from './screens/MapScreen';
 import RemindersScreen from './screens/RemindersScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import ImportContactsScreen from './screens/ImportContactsScreen';
 import AuthScreen from './screens/AuthScreen';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { IdentityProvider as TameIdentityProvider } from './src/utils/useIdentity';
@@ -27,6 +28,7 @@ function ContactsStack() {
       <Stack.Screen name="ContactDetail" component={ContactDetailScreen} options={{ title: 'Contact' }} />
       <Stack.Screen name="AddContact" component={AddContactScreen} options={{ title: 'New Contact' }} />
       <Stack.Screen name="AddInteraction" component={AddInteractionScreen} options={{ title: 'Log Interaction' }} />
+      <Stack.Screen name="ImportContacts" component={ImportContactsScreen} options={{ title: 'Import Contacts' }} />
       <Stack.Screen name="Auth" component={AuthScreen} options={{ title: 'Tame ID' }} />
     </Stack.Navigator>
   );

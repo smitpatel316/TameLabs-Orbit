@@ -1,3 +1,4 @@
+/* web shim - auto-generated from native, SafeAreaView -> View stripped */
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share, RefreshControl } from 'react-native';
 import { useOrbitStore } from '../stores/orbitStore';
@@ -67,6 +68,15 @@ export default function SettingsScreen({ navigation }: any) {
           <Text style={styles.hint}>Supabase v1 now, Keycloak-ready v2. One login Hubble • Orbit • Quiet.</Text>
           <View style={{height:10}} />
           <Button title={tameUser ? 'Manage Tame ID' : 'Connect Tame ID'} variant="secondary" onPress={()=> (navigation || nav).navigate('Auth')} accessibilityLabel="Manage Tame ID" />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Import & Calendar</Text>
+          <Text style={styles.sectionHint}>{contacts.length} contacts • Import from phone, sync birthdays to calendar</Text>
+          <View style={{ gap: theme.spacing.s }}>
+            <Button title="Import from device contacts" variant="secondary" onPress={()=> (navigation || nav).navigate('ImportContacts')} accessibilityLabel="Import contacts from phone" />
+            <Text style={styles.hint}>Local-first: your address book never leaves device. Dedup by normalized name. Birthdays MM/DD kept for Insights. Calendar sync needs expo-calendar on device builds. Web shows mock demo.</Text>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -142,13 +152,15 @@ export default function SettingsScreen({ navigation }: any) {
             <Text style={styles.checkRow}>• Button/Input design system, accessibility</Text>
             <Text style={styles.checkRow}>• Health score real formula (recency+energy+sentiment)</Text>
             <Text style={styles.checkRow}>• Groups CRUD + Tags chip management</Text>
+            <Text style={styles.checkRow}>• Import from device contacts + dedup + birthday MM/DD</Text>
+            <Text style={styles.checkRow}>• Calendar sync for birthdays 60d (expo-calendar device)</Text>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.aboutText}>Orbit v2.2 — Map your relationships. Local-first, zero tracking. Health = recency 30% + frequency 30% + energy 35% + sentiment 5%. Part of TameLabs.</Text>
-          <Text style={styles.aboutVersion}>v2.2 • quality polish • {new Date().getFullYear()}</Text>
+          <Text style={styles.aboutText}>Orbit v2.3 — Map your relationships. Local-first, zero tracking. Health = recency 30% + frequency 30% + energy 35% + sentiment 5%. Import from phone contacts with dedup, birthdays MM/DD, calendar sync 60d with alarms. Part of TameLabs.</Text>
+          <Text style={styles.aboutVersion}>v2.3 • import + calendar • {new Date().getFullYear()}</Text>
         </View>
 
         <View style={{ height: 24 }} />

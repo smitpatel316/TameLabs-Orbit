@@ -84,11 +84,12 @@ const filtered = useMemo(() => {
             accessibilityLabel="Search contacts"
           />
         </View>
-        <View style={styles.filterRow}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}>
+        <View style={[styles.filterRow, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 8 }]}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 12 }}>
             <TouchableOpacity style={[styles.chip, !selectedTag && !filterType && styles.chipActive]} onPress={()=>{setSelectedTag(null); setFilterType(null);}}><Text style={[styles.chipText, !selectedTag && !filterType && styles.chipTextActive]}>All</Text></TouchableOpacity>
             {tags.map((tag:string)=><TouchableOpacity key={tag} style={[styles.chip, selectedTag===tag && styles.chipActive]} onPress={()=>setSelectedTag(selectedTag===tag?null:tag)} accessibilityRole="button" accessibilityState={{ selected: selectedTag===tag }}><Text style={[styles.chipText, selectedTag===tag && styles.chipTextActive]}>{tag}</Text></TouchableOpacity>)}
           </ScrollView>
+          <TouchableOpacity style={styles.importLink} onPress={()=>navigation.navigate('ImportContacts')} accessibilityLabel="Import phone contacts" accessibilityRole="button"><Text style={styles.importLinkText}>Import</Text></TouchableOpacity>
         </View>
         <View style={styles.sortRow}>
           {(['recent','health','name'] as const).map(s=><TouchableOpacity key={s} style={[styles.sortChip, sortBy===s && styles.sortChipActive]} onPress={()=>setSortBy(s)} accessibilityRole="button" accessibilityState={{ selected: sortBy===s }}><Text style={[styles.sortText, sortBy===s && styles.sortTextActive]}>{s}</Text></TouchableOpacity>)}
@@ -148,6 +149,8 @@ const styles = StyleSheet.create({
   emptyText: { color: theme.colors.textSecondary, textAlign: 'center', fontSize: 13, lineHeight: 18 },
   emptyAction: { marginTop: 12, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: theme.colors.surface, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border },
   emptyActionText: { color: theme.colors.text, fontSize: 13, fontWeight: '600' as any },
+  importLink: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 12, paddingVertical: 6, borderRadius: theme.borderRadius.pill, ...theme.shadows.chip },
+  importLinkText: { color: theme.colors.text, fontSize: 12, fontWeight: '600' as any },
   fab: { position: 'absolute', right: theme.spacing.ml, bottom: 88, width: theme.sizes.fab, height: theme.sizes.fab, borderRadius: theme.sizes.fab/2, backgroundColor: theme.colors.primary, justifyContent: 'center', alignItems: 'center', zIndex: 10, ...theme.shadows.fab },
   fabText: { color: '#FFF', fontSize: 28, fontWeight: '300' as any, marginTop: -2 },
 });

@@ -1,8 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { useOrbitStore, RELATIONSHIP_TYPES } from '../stores/orbitStore';
 import { theme, formatTimeAgo, formatDate, getHealthColor } from '../src/theme';
 import { EmptyState } from '../src/components/EmptyState';
+import { Button } from '../src/components/Button';
+import { buildUpcomingBirthdays, syncBirthdaysToCalendar, requestCalendarPermission } from '../src/services/calendarSync';
 import { logger } from '../src/utils/logger';
 
 export default function InsightsScreen({ navigation }: any) {
@@ -35,18 +37,43 @@ export default function InsightsScreen({ navigation }: any) {
   const needingAttention = useMemo(()=> getNeedingAttention().slice(0,5), [getNeedingAttention]);
   const total = contacts.length || 1;
 
-  const upcomingBirthdays = useMemo(()=>{
-    if (!contacts.length) return [];
-    const now = new Date();
-    return contacts.filter(c=>c.birthday).map(c=>{
-      const [mm,dd] = (c.birthday||'').split('/').map(Number);
-      if (!mm||!dd) return null;
-      const next = new Date(now.getFullYear(), mm-1, dd);
-      if (next < now) next.setFullYear(now.getFullYear()+1);
-      const diffDays = Math.ceil((next.getTime() - now.getTime())/86400000);
-      return { contact: c, next, diffDays };
-    }).filter(Boolean).sort((a:any,b:any)=>a.diffDays-b.diffDays).slice(0,5) as any[];
+  const upcomingBirthdaysRaw = useMemo(()=>{
+    return buildUpcomingBirthdays(contacts.map(c=>({ id: c.id, name: c.name, birthday: c.birthday }))).slice(0,10);
   }, [contacts]);
+
+  // Adapt to old rendering shape for compatibility + new fields
+  const upcomingBirthdays = useMemo(()=>{
+    return upcomingBirthdaysRaw.map((b:any)=> ({
+      contact: { id: b.contactId, name: b.name, birthday: b.birthday },
+      next: new Date(b.nextDate),
+      diffDays: b.daysUntil,
+      _raw: b, // keep raw for calendar sync
+    }));
+  }, [upcomingBirthdaysRaw]);
+
+  const [syncing, setSyncing] = useState(false);
+
+  const handleCalendarSync = useCallback(async()=>{
+    setSyncing(true);
+    try {
+      const perm = await requestCalendarPermission();
+      if (perm.status==='unavailable') {
+        Alert.alert('Not available', 'Calendar sync requires expo-calendar installed. Run: npx expo install expo-calendar. Available on device builds only.');
+        setSyncing(false);
+        return;
+      }
+      if (!perm.granted) {
+        Alert.alert('Permission needed', `Calendar permission status: ${perm.status}. Allow in system settings.`);
+        setSyncing(false);
+        return;
+      }
+      const result = await syncBirthdaysToCalendar(upcomingBirthdaysRaw as any);
+      Alert.alert(result.ok?'Synced':'Sync failed', result.msg);
+      logger.info('Insights','calendar sync', result);
+    } catch (e:any){
+      Alert.alert('Sync error', e?.message||'Unknown');
+    } finally { setSyncing(false); }
+  }, [upcomingBirthdaysRaw]);
 
   const recentContact = useMemo(()=>{
     if (!contacts.length) return null;
@@ -122,7 +149,11 @@ export default function InsightsScreen({ navigation }: any) {
 
         {upcomingBirthdays.length>0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Upcoming Birthdays • 30d</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Upcoming Birthdays • 60d • {upcomingBirthdays.length}</Text>
+              <Button title={syncing?'Syncing...':'Sync to calendar'} size="s" variant="secondary" onPress={handleCalendarSync} loading={syncing} accessibilityLabel="Sync birthdays to device calendar" />
+            </View>
+            <Text style={styles.hint}>Birthdays are stored as MM/DD locally. Sync creates calendar events with 1d + 1h alarms. Works on device builds with expo-calendar.</Text>
             {upcomingBirthdays.map((b:any)=>(
               <View key={b.contact.id} style={styles.birthdayRow}>
                 <View style={styles.birthAvatar}><Text style={styles.birthAvatarText}>{b.contact.name[0].toUpperCase()}</Text></View>
@@ -194,7 +225,9 @@ const styles = StyleSheet.create({
   statLabel: { ...theme.typography.micro, color: theme.colors.textTertiary, textTransform: 'uppercase' as any },
   statValue: { ...theme.typography.h1, color: theme.colors.text },
   section: { backgroundColor: theme.colors.surface, padding: theme.spacing.ml, borderRadius: theme.borderRadius.l, borderWidth: 1, borderColor: theme.colors.border, ...theme.shadows.card, gap: theme.spacing.s },
-  sectionTitle: { ...theme.typography.label, color: theme.colors.text, marginBottom: 2 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing.s, marginBottom: 2 },
+  sectionTitle: { ...theme.typography.label, color: theme.colors.text, marginBottom: 2, flex: 1 },
+  hint: { ...theme.typography.micro, color: theme.colors.textTertiary, fontStyle: 'italic' as any, lineHeight: 14 },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.s },
   barLabel: { ...theme.typography.caption, color: theme.colors.textSecondary, width: 110 },
   barContainer: { flex: 1, height: 8, backgroundColor: theme.colors.surfaceHover, borderRadius: theme.borderRadius.full, overflow: 'hidden' },

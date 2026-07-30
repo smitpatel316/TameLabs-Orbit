@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Alert } from 'react-native';
 import { useOrbitStore, RELATIONSHIP_TYPES } from '../stores/orbitStore';
 
 export default function AddContactScreen({ navigation }: any) {
@@ -20,7 +20,7 @@ export default function AddContactScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.section}><Text style={styles.label}>Name *</Text><TextInput style={styles.input} placeholder="Enter name" placeholderTextColor="#6B7280" value={name} onChangeText={setName} /></View>
         <View style={styles.section}><Text style={styles.label}>Relationship Type</Text><View style={styles.types}>{Object.entries(RELATIONSHIP_TYPES).map(([k,v]:any)=><TouchableOpacity key={k} style={[styles.typeBtn, type===k && { backgroundColor: v.color }]} onPress={()=>setType(k)}><Text style={styles.typeEmoji}>{v.emoji}</Text><Text style={[styles.typeLabel, type===k && styles.typeLabelActive]}>{v.label}</Text></TouchableOpacity>)}</View></View>
@@ -29,7 +29,7 @@ export default function AddContactScreen({ navigation }: any) {
         <View style={styles.section}><Text style={styles.label}>Notes</Text><TextInput style={[styles.input, styles.multiline]} placeholder="How did you meet?..." placeholderTextColor="#6B7280" value={notes} onChangeText={setNotes} multiline numberOfLines={3} /></View>
         <TouchableOpacity style={styles.submit} onPress={handleSubmit}><Text style={styles.submitText}>Add Contact</Text></TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({

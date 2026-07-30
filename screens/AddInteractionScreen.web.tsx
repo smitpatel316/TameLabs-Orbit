@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
 import { useOrbitStore, ENERGY_LEVELS } from '../stores/orbitStore';
 
 export default function AddInteractionScreen({ route, navigation }: any) {
@@ -19,7 +19,7 @@ export default function AddInteractionScreen({ route, navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.header}>Log interaction with {contact?.name || 'contact'}</Text>
         <View style={styles.section}><Text style={styles.label}>Type</Text><View style={styles.row}>{(['call','text','in-person','email','other'] as const).map(t=><TouchableOpacity key={t} style={[styles.chip, type===t && styles.chipActive]} onPress={()=>setType(t)}><Text style={[styles.chipText, type===t && styles.chipTextActive]}>{t}</Text></TouchableOpacity>)}</View></View>
@@ -28,7 +28,7 @@ export default function AddInteractionScreen({ route, navigation }: any) {
         <View style={styles.section}><Text style={styles.label}>Sentiment</Text><View style={styles.row}>{(['positive','neutral','negative'] as const).map(s=><TouchableOpacity key={s} style={[styles.chip, sentiment===s && styles.chipActive]} onPress={()=>setSentiment(s)}><Text style={[styles.chipText, sentiment===s && styles.chipTextActive]}>{s}</Text></TouchableOpacity>)}</View></View>
         <TouchableOpacity style={styles.submit} onPress={handleSubmit}><Text style={styles.submitText}>Log Interaction</Text></TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({

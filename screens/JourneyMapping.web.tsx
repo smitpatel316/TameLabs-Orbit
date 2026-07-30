@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { useOrbitStore } from '../stores/orbitStore';
 
 export default function JourneyMappingScreen({ route }: any) {
@@ -14,17 +14,17 @@ export default function JourneyMappingScreen({ route }: any) {
     return [...interactions].sort((a:any,b:any)=>a.createdAt.localeCompare(b.createdAt));
   }, [interactions]);
 
-  if (!contact) return <View style={styles.container}><Text style={styles.error}>Not found</Text></View>;
+  if (!contact) return <SafeAreaView style={styles.container}><Text style={styles.error}>Not found</Text></SafeAreaView>;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Journey - {contact.name}</Text>
         <Text style={styles.sub}>{timeline.length} interactions over time</Text>
         {timeline.map((i:any)=><View key={i.id} style={styles.item}><View style={styles.lineContainer}><View style={styles.dot} /><View style={styles.line} /></View><View style={styles.itemContent}><Text style={styles.date}>{new Date(i.createdAt).toLocaleDateString()}</Text><Text style={styles.summary}>{i.summary}</Text><Text style={styles.meta}>{i.type} - {i.energy} - {i.sentiment}</Text></View></View>)}
         {timeline.length===0 && <Text style={styles.empty}>No journey yet. Log interactions to see timeline.</Text>}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({

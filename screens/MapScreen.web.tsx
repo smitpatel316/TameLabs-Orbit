@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import { useOrbitStore, RELATIONSHIP_TYPES, ENERGY_LEVELS } from '../stores/orbitStore';
 
 export default function MapScreen({ navigation }: any) {
@@ -17,7 +17,7 @@ export default function MapScreen({ navigation }: any) {
   }, [contacts, calculateHealthScore]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Relationship Map</Text>
         <Text style={styles.sub}>Circles - energy vs health</Text>
@@ -55,7 +55,7 @@ export default function MapScreen({ navigation }: any) {
           })}
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

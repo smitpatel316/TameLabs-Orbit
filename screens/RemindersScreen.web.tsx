@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, TextInput } from 'react-native';
 import { useOrbitStore } from '../stores/orbitStore';
 
 export default function RemindersScreen() {
@@ -33,7 +33,7 @@ export default function RemindersScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.inputSection}>
         <TextInput style={styles.input} placeholder="Reminder... e.g. Check in" placeholderTextColor="#6B7280" value={text} onChangeText={setText} />
         <View style={styles.chipRow}>
@@ -42,7 +42,7 @@ export default function RemindersScreen() {
         <TouchableOpacity style={[styles.addBtn, (!text || !selectedContact) && styles.addBtnDisabled]} onPress={handleAdd}><Text style={styles.addBtnText}>Add Reminder</Text></TouchableOpacity>
       </View>
       <FlatList data={reminders} keyExtractor={(i:any)=>i.id} renderItem={renderItem} contentContainerStyle={styles.list} ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyText}>No reminders</Text></View>} />
-    </View>
+    </SafeAreaView>
   );
 }
 

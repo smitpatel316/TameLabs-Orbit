@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
 import { useOrbitStore, RELATIONSHIP_TYPES, ENERGY_LEVELS } from '../stores/orbitStore';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -12,7 +12,7 @@ export default function ContactDetailScreen({ route, navigation }: any) {
   const contact = contacts.find(c=>c.id===id);
   const contactInteractions = interactions.filter(i=>i.contactId===id).sort((a:any,b:any)=>b.createdAt.localeCompare(a.createdAt));
 
-  if (!contact) return <View style={styles.container}><Text style={styles.error}>Not found</Text></View>;
+  if (!contact) return <SafeAreaView style={styles.container}><Text style={styles.error}>Not found</Text></SafeAreaView>;
 
   const type = (RELATIONSHIP_TYPES as any)[contact.type] || RELATIONSHIP_TYPES.acquaintance;
   const health = calculateHealthScore(id);
@@ -26,7 +26,7 @@ export default function ContactDetailScreen({ route, navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <View style={[styles.avatar, { backgroundColor: type.color }]}><Text style={styles.avatarText}>{contact.name[0].toUpperCase()}</Text></View>
@@ -50,7 +50,7 @@ export default function ContactDetailScreen({ route, navigation }: any) {
           <TouchableOpacity style={styles.delete} onPress={handleDelete}><Text style={styles.deleteText}>Delete Contact</Text></TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useOrbitStore } from '../stores/orbitStore';
 
 export default function SentimentScreen({ route }: any) {
@@ -17,10 +17,10 @@ export default function SentimentScreen({ route }: any) {
     return { pos, neu, neg, total: interactions.length };
   }, [interactions]);
 
-  if (!contact) return <View style={styles.container}><Text style={styles.error}>Not found</Text></View>;
+  if (!contact) return <SafeAreaView style={styles.container}><Text style={styles.error}>Not found</Text></SafeAreaView>;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Sentiment - {contact.name}</Text>
         <View style={styles.card}>
@@ -39,7 +39,7 @@ export default function SentimentScreen({ route }: any) {
           </Text>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({

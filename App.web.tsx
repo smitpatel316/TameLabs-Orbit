@@ -12,7 +12,9 @@ import InsightsScreen from './screens/InsightsScreen';
 import MapScreen from './screens/MapScreen';
 import RemindersScreen from './screens/RemindersScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import AuthScreen from './screens/AuthScreen';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { IdentityProvider as TameIdentityProvider } from './src/utils/useIdentity';
 import { logger } from './src/utils/logger';
 
 const Stack = createNativeStackNavigator();
@@ -25,6 +27,7 @@ function ContactsStack() {
       <Stack.Screen name="ContactDetail" component={ContactDetailScreen} options={{ title: 'Contact' }} />
       <Stack.Screen name="AddContact" component={AddContactScreen} options={{ title: 'New Contact' }} />
       <Stack.Screen name="AddInteraction" component={AddInteractionScreen} options={{ title: 'Log Interaction' }} />
+      <Stack.Screen name="Auth" component={AuthScreen} options={{ title: 'Tame ID' }} />
     </Stack.Navigator>
   );
 }
@@ -41,7 +44,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <SafeAreaProvider>
+      <TameIdentityProvider><SafeAreaProvider>
         <NavigationContainer>
           <Tab.Navigator screenOptions={{ headerShown:false }}>
             <Tab.Screen name="Contacts" component={ContactsStack} options={{ tabBarLabel:'Contacts', tabBarIcon:()=> <Text>CO</Text> }} />
@@ -51,7 +54,7 @@ export default function App() {
             <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarLabel:'Settings', tabBarIcon:()=> <Text>SE</Text> }} />
           </Tab.Navigator>
         </NavigationContainer>
-      </SafeAreaProvider>
+      </SafeAreaProvider></TameIdentityProvider>
     </ErrorBoundary>
   );
 }

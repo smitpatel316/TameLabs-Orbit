@@ -1,79 +1,75 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle, StyleProp } from 'react-native';
 import { theme } from '../theme';
 
-interface ButtonProps {
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Size = 's' | 'm' | 'l';
+
+interface Props {
   title: string;
-  onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-  size?: 's' | 'm' | 'l';
-  loading?: boolean;
+  onPress?: () => void;
+  variant?: Variant;
+  size?: Size;
   disabled?: boolean;
-  style?: ViewStyle;
+  loading?: boolean;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+  accessibilityLabel?: string;
 }
 
-export const Button: React.FC<ButtonProps> = ({
+export const Button: React.FC<Props> = ({
   title,
   onPress,
   variant = 'primary',
   size = 'm',
-  loading = false,
   disabled = false,
+  loading = false,
   style,
+  textStyle,
+  accessibilityLabel,
 }) => {
-  const getVariantStyle = () => {
-    switch (variant) {
-      case 'secondary': return { backgroundColor: theme.colors.surfaceHover, borderColor: theme.colors.border };
-      case 'ghost': return { backgroundColor: 'transparent', borderColor: 'transparent' };
-      case 'danger': return { backgroundColor: theme.colors.danger, borderColor: theme.colors.danger };
-      default: return { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary };
-    }
-  };
-
-  const getTextStyle = () => {
-    switch (variant) {
-      case 'ghost': return { color: theme.colors.textSecondary };
-      default: return { color: theme.colors.text };
-    }
-  };
-
-  const getSizeStyle = () => {
-    switch (size) {
-      case 's': return { paddingVertical: 6, paddingHorizontal: 12, borderRadius: theme.borderRadius.s };
-      case 'm': return { paddingVertical: 10, paddingHorizontal: 16, borderRadius: theme.borderRadius.m };
-      case 'l': return { paddingVertical: 14, paddingHorizontal: 20, borderRadius: theme.borderRadius.l };
-    }
-  };
-
+  const isDisabled = disabled || loading;
   return (
     <TouchableOpacity
+      onPress={onPress}
+      disabled={isDisabled}
+      activeOpacity={0.7}
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!isDisabled }}
       style={[
         styles.base,
-        getVariantStyle(),
-        getSizeStyle(),
-        disabled && styles.disabled,
+        styles[size],
+        styles[variant],
+        isDisabled && styles.disabled,
         style,
       ]}
-      onPress={onPress}
-      disabled={disabled || loading}
     >
-      {loading ? <ActivityIndicator color={theme.colors.text} size="small" /> : <Text style={[styles.text, getTextStyle()]}>{title}</Text>}
+      {loading ? (
+        <ActivityIndicator color={variant==='primary' ? '#FFF' : theme.colors.text} size="small" />
+      ) : (
+        <Text style={[styles.text, styles[`text_${variant}` as keyof typeof styles] as any, styles[`text_${size}` as keyof typeof styles] as any, textStyle]}>{title}</Text>
+      )}
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  base: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  disabled: {
-    opacity: 0.5,
-  },
+  base: { borderRadius: theme.borderRadius.m, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' },
+  s: { minHeight: 36, paddingHorizontal: theme.spacing.m },
+  m: { minHeight: 44, paddingHorizontal: theme.spacing.ml },
+  l: { minHeight: 52, paddingHorizontal: theme.spacing.l },
+  primary: { backgroundColor: theme.colors.primary },
+  secondary: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
+  ghost: { backgroundColor: 'transparent' },
+  danger: { backgroundColor: '#FFF5F5', borderWidth: 1, borderColor: '#FED7D7' },
+  disabled: { opacity: 0.45 },
+  text: { fontWeight: '600' as const },
+  text_primary: { color: '#FFF' },
+  text_secondary: { color: theme.colors.text },
+  text_ghost: { color: theme.colors.text },
+  text_danger: { color: theme.colors.danger },
+  text_s: { fontSize: 13 },
+  text_m: { fontSize: 15 },
+  text_l: { fontSize: 16 },
 });

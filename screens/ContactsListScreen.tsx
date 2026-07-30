@@ -23,11 +23,11 @@ export default function ContactsListScreen({ navigation }: any) {
   }, []);
 
   function getHealthColor(h: number): string {
-  if (h>=80) return '#059669';
-  if (h>=60) return '#10B981';
-  if (h>=40) return '#F59E0B';
-  if (h>=20) return '#F97316';
-  return '#EF4444';
+  if (h>=80) return theme.colors.health.excellent;
+  if (h>=60) return theme.colors.health.good;
+  if (h>=40) return theme.colors.health.okay;
+  if (h>=20) return theme.colors.health.poor;
+  return theme.colors.health.critical;
 }
 
 const filtered = useMemo(() => {
@@ -109,7 +109,7 @@ const filtered = useMemo(() => {
             </View>
           }
         />
-        <TouchableOpacity style={styles.fab} onPress={()=>navigation.navigate('AddContact')} accessibilityLabel="Add contact" accessibilityRole="button"><Text style={styles.fabText}>+</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.fab} onPress={()=>navigation.navigate('AddContact')} accessibilityLabel="Add contact" accessibilityRole="button" activeOpacity={0.8}><Text style={styles.fabText}>+</Text></TouchableOpacity>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -148,6 +148,6 @@ const styles = StyleSheet.create({
   emptyText: { color: theme.colors.textSecondary, textAlign: 'center', fontSize: 13, lineHeight: 18 },
   emptyAction: { marginTop: 12, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: theme.colors.surface, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border },
   emptyActionText: { color: theme.colors.text, fontSize: 13, fontWeight: '600' as any },
-  fab: { position: 'absolute', right: 20, bottom: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: theme.colors.primary, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
+  fab: { position: 'absolute', right: theme.spacing.ml, bottom: 88, width: theme.sizes.fab, height: theme.sizes.fab, borderRadius: theme.sizes.fab/2, backgroundColor: theme.colors.primary, justifyContent: 'center', alignItems: 'center', zIndex: 10, ...theme.shadows.fab },
   fabText: { color: '#FFF', fontSize: 28, fontWeight: '300' as any, marginTop: -2 },
 });

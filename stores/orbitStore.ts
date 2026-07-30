@@ -84,13 +84,13 @@ export const useOrbitStore = create<OrbitState>()(
       addContact: (contact) => {
         const newContact: Contact = {
           id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
-          name: contact.name,
+          name: contact.name.trim(),
           type: (contact.type as any) || 'acquaintance',
           energy: (contact.energy as any) || 'neutral',
           healthScore: 100,
           createdAt: new Date().toISOString(),
           lastInteraction: null,
-          birthday: null,
+          birthday: (contact as any).birthday || null,
           notes: contact.notes || '',
           tags: contact.tags || [],
           groupId: contact.groupId,

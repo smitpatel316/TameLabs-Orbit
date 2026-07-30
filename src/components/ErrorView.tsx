@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { theme } from '../theme';
@@ -13,9 +14,9 @@ export const ErrorView: React.FC<{ message: string; onRetry: () => void }> = ({ 
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  title: { style: { color: theme.colors.text, fontSize: 20, fontWeight: '600', marginBottom: 8 }, },
-  message: { style: { color: theme.colors.textSecondary, fontSize: 16, textAlign: 'center', marginBottom: 24 }, },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: theme.colors.background },
+  title: { color: theme.colors.text, fontSize: 20, fontWeight: '600' as any, marginBottom: 8 },
+  message: { color: theme.colors.textSecondary, fontSize: 16, textAlign: 'center', marginBottom: 24 },
   retryButton: { backgroundColor: theme.colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
-  retryText: { color: theme.colors.text, fontWeight: '600' },
+  retryText: { color: '#FFF', fontWeight: '600' as any },
 });

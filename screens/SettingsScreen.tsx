@@ -47,7 +47,7 @@ export default function SettingsScreen() {
           {tags.map(tag => (
             <TouchableOpacity key={tag} style={styles.tagChip} onPress={() => removeTag(tag)}>
               <Text style={styles.tagText}>{tag}</Text>
-              <Text style={styles.removeText}>✕</Text>
+              <Text style={styles.removeIcon}>✕</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -68,7 +68,7 @@ export default function SettingsScreen() {
           {groups.map(group => (
             <TouchableOpacity key={group.id} style={styles.groupItem} onPress={() => deleteGroup(group.id)}>
               <Text style={styles.groupText}>{group.name}</Text>
-              <Text style={styles.removeText}>✕</Text>
+              <Text style={styles.removeIcon}>✕</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -93,11 +93,10 @@ const styles = StyleSheet.create({
   tagList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tagChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surfaceHover, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border },
   tagText: { color: theme.colors.text, fontSize: 14, marginRight: 8 },
-  removeText: { color: theme.colors.textTertiary, fontSize: 14, fontWeight: '600' },
   groupList: { gap: 8 },
   groupItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surfaceHover, padding: 12, borderRadius: theme.borderRadius.m, borderWidth: 1, borderColor: theme.colors.border },
   groupText: { color: theme.colors.text, fontSize: 14 },
-  removeText: { color: theme.colors.textTertiary, fontSize: 14 },
+  removeIcon: { color: theme.colors.textTertiary, fontSize: 14, fontWeight: '600' as any },
   settingItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   settingText: { color: theme.colors.text, fontSize: 14 },
   settingValue: { color: theme.colors.textTertiary, fontSize: 14 },

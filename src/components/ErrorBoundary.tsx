@@ -18,7 +18,6 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     logger.logError(error, { tag: 'ErrorBoundary', componentStack: errorInfo.componentStack, errorId: this.state.errorId });
-    // eslint-disable-next-line no-console
     console.error('Uncaught:', error, errorInfo);
   }
 

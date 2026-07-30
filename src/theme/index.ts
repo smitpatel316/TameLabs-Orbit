@@ -1,62 +1,100 @@
 export const theme = {
   colors: {
-    background: '#0F1117',
-    surface: '#1A1D27',
-    surfaceHover: '#262A38',
-    surfaceActive: '#2D3243',
-    border: '#2D3243',
-    
-    text: '#FFFFFF',
-    textSecondary: '#9CA3AF',
-    textTertiary: '#6B7280',
-    
-    primary: '#E53E3E',
-    primaryDark: '#C53030',
-    primaryLight: '#FFB3B3',
-    
-    success: '#38A169',
-    warning: '#D69E2E',
-    danger: '#E53E3E',
-    
-    blue: '#3182CE',
-    pink: '#D53F8C',
+    background: '#FFFFFF',
+    surface: '#FFFFFF',
+    surfaceHover: '#F9FAFB',
+    surfaceActive: '#F3F4F6',
+    surfaceMuted: '#F9FAFB',
+    border: '#E5E7EB',
+    borderLight: '#F3F4F6',
+    borderStrong: '#D1D5DB',
+    text: '#111827',
+    textSecondary: '#6B7280',
+    textTertiary: '#9CA3AF',
+    textMuted: '#D1D5DB',
+    primary: '#111827',
+    onPrimary: '#FFFFFF',
+    primaryHover: '#1F2937',
+    danger: '#EF4444',
+    success: '#10B981',
+    warning: '#F59E0B',
+    accent: '#3B82F6',
+    skeleton: '#F3F4F6',
+    overlay: 'rgba(0,0,0,0.4)',
+    health: {
+      excellent: '#059669',
+      good: '#10B981',
+      okay: '#F59E0B',
+      poor: '#F97316',
+      critical: '#EF4444',
+    },
   },
   spacing: { 
     xs: 4, 
     s: 8, 
-    m: 16, 
-    l: 24, 
-    xl: 32, 
-    xxl: 48 
+    m: 12,
+    ml: 16, 
+    l: 20, 
+    xl: 24, 
+    xxl: 32,
+    xxxl: 48,
   },
   borderRadius: { 
-    s: 6, 
-    m: 10, 
-    l: 14, 
+    xs: 6, 
+    s: 8, 
+    m: 10,
+    ml: 12, 
+    l: 16, 
+    xl: 20,
+    xxl: 24,
+    pill: 999,
     full: 9999 
   },
   typography: {
-    h1: { fontSize: 32, fontWeight: '700' as const },
-    h2: { fontSize: 24, fontWeight: '600' as const },
-    h3: { fontSize: 20, fontWeight: '600' as const },
-    body: { fontSize: 16, fontWeight: '400' as const },
-    caption: { fontSize: 14, fontWeight: '400' as const },
-    label: { fontSize: 12, fontWeight: '500' as const },
+    display: { fontSize: 28, fontWeight: '800' as const, letterSpacing: -0.6 },
+    h1: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.5 },
+    h2: { fontSize: 18, fontWeight: '700' as const, letterSpacing: -0.3 },
+    h3: { fontSize: 16, fontWeight: '600' as const },
+    body: { fontSize: 15, lineHeight: 22, fontWeight: '400' as const },
+    bodySmall: { fontSize: 14, lineHeight: 20, fontWeight: '400' as const },
+    caption: { fontSize: 12, lineHeight: 16, fontWeight: '500' as const },
+    micro: { fontSize: 11, lineHeight: 14 },
+    label: { fontSize: 11, fontWeight: '700' as const, letterSpacing: 0.8, textTransform: 'uppercase' as const },
+    labelSmall: { fontSize: 10, fontWeight: '700' as const, letterSpacing: 1, textTransform: 'uppercase' as const },
   },
   shadows: {
-    sm: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
-    md: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
-    lg: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
-  }
+    none: {},
+    sm: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 },
+    md: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 4 },
+    lg: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 8 },
+    card: { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+    cardHover: { shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+    chip: { shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+    fab: { shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8 },
+    modal: { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 12 },
+  },
+  sizes: {
+    fab: 56,
+    avatar: 40,
+    tabBar: 56,
+  },
 };
 
 export const RELATIONSHIP_COLORS: Record<string, string> = {
-  family: '#E53E3E',
-  friend: '#3182CE',
-  professional: '#D69E2E',
-  romantic: '#D53F8C',
-  acquaintance: '#718096',
+  family: '#EF4444',
+  friend: '#3B82F6',
+  professional: '#F59E0B',
+  romantic: '#EC4899',
+  acquaintance: '#6B7280',
 };
+
+export function getHealthColor(h: number): string {
+  if (h>=80) return theme.colors.health.excellent;
+  if (h>=60) return theme.colors.health.good;
+  if (h>=40) return theme.colors.health.okay;
+  if (h>=20) return theme.colors.health.poor;
+  return theme.colors.health.critical;
+}
 
 export function formatTimeAgo(iso: string): string {
   try {
@@ -86,4 +124,3 @@ export function formatDate(iso: string): string {
 export function formatFullDate(iso: string): string {
   try { return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }); } catch { return iso; }
 }
-

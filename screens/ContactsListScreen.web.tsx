@@ -22,7 +22,15 @@ export default function ContactsListScreen({ navigation }: any) {
     setTimeout(()=> setRefreshing(false), 600);
   }, []);
 
-  const filtered = useMemo(() => {
+  function getHealthColor(h: number): string {
+  if (h>=80) return '#059669';
+  if (h>=60) return '#10B981';
+  if (h>=40) return '#F59E0B';
+  if (h>=20) return '#F97316';
+  return '#EF4444';
+}
+
+const filtered = useMemo(() => {
     const q = search.toLowerCase();
     let list = contacts.filter(c => {
       const matchesSearch = !q || c.name.toLowerCase().includes(q) || (c.notes && c.notes.toLowerCase().includes(q)) || (c.tags && c.tags.some((t:string) => t.toLowerCase().includes(q)));
@@ -56,7 +64,7 @@ export default function ContactsListScreen({ navigation }: any) {
             <View style={styles.tagRow}>{item.tags.slice(0,3).map((t:string)=><View key={t} style={styles.miniTag}><Text style={styles.miniTagText}>{t}</Text></View>)}{item.tags.length>3 ? <Text style={styles.moreTags}>+{item.tags.length-3}</Text> : null}</View>
           ):null}
         </View>
-        <View style={[styles.healthBadge, { backgroundColor: health>=80?'#38A169':health>=60?'#68D391':health>=40?'#ECC94B':health>=20?'#ED8936':'#E53E3E' }]}><Text style={styles.healthText}>{health}%</Text></View>
+        <View style={[styles.healthBadge, { backgroundColor: getHealthColor(health) }]}><Text style={styles.healthText}>{health}%</Text></View>
       </TouchableOpacity>
     );
   };
@@ -89,7 +97,7 @@ export default function ContactsListScreen({ navigation }: any) {
           data={filtered} 
           keyExtractor={(i)=>i.id} 
           renderItem={renderContact} 
-          contentContainerStyle={styles.list} 
+          contentContainerStyle={[styles.list, { paddingBottom: 120 }]} 
           keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#E53E3E" />}
           ListEmptyComponent={

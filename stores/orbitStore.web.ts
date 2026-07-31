@@ -15,9 +15,11 @@ export const ENERGY_LEVELS: Record<string, { value: number; label: string; color
   nourishing: { value: 2, label: 'Nourishing', color: '#3182CE' },
 };
 
-export type Contact = { id: string; name: string; type: keyof typeof RELATIONSHIP_TYPES; energy: keyof typeof ENERGY_LEVELS; healthScore: number; createdAt: string; lastInteraction: string | null; birthday: string | null; notes?: string; tags?: string[]; };
+export const GROUP_COLORS = ['#111827', '#E53E3E', '#3182CE', '#D69E2E', '#10B981', '#D53F8C', '#805AD5', '#ED8936'];
+
+export type Contact = { id: string; name: string; type: keyof typeof RELATIONSHIP_TYPES; energy: keyof typeof ENERGY_LEVELS; healthScore: number; createdAt: string; lastInteraction: string | null; birthday: string | null; notes?: string; tags?: string[]; groupId?: string; };
 export type Interaction = { id: string; contactId: string; date: string; type: string; summary: string; topics?: string[]; sentiment?: string; energy?: string; createdAt: string; };
-export type Group = { id: string; name: string };
+export type Group = { id: string; name: string; color?: string; createdAt?: string; };
 export type Reminder = { id: string; contactId: string; message: string; dueDate: string; done: boolean; createdAt: string };
 
 const KEY = 'orbit-v2-web';
@@ -46,13 +48,14 @@ type OrbitState = {
   updateContact: (id: string, u: any) => void;
   deleteContact: (id: string) => void;
   addTag: (t: string) => void; removeTag: (t: string) => void;
-  addGroup: (n: string) => Group; deleteGroup: (id: string) => void;
+  addGroup: (n: string, color?: string) => Group; updateGroup: (id: string, u: any) => Group | null; deleteGroup: (id: string) => void;
   addInteraction: (i: any) => Interaction;
   getContactWithInteractions: (id: string) => any;
   calculateHealthScore: (id: string) => number;
   getNeedingAttention: () => any[];
   getByType: (type: string) => Contact[];
   getStats: () => any;
+  getGroupCounts: () => Record<string, number>;
   addReminder: (r: any) => Reminder;
   updateReminder: (id: string, u: any) => void;
   toggleReminder: (id: string) => void;
@@ -61,6 +64,8 @@ type OrbitState = {
   getReminderGroups: () => { overdue: Reminder[]; today: Reminder[]; upcoming: Reminder[]; done: Reminder[] };
   bulkImportContacts: (incoming: { name: string; birthday?: string | null; notes?: string; tags?: string[] }[]) => BulkResult;
 };
+
+function genId(): string { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
 let memoryState: OrbitState = (() => {
   const loaded = safeLoad();
@@ -95,11 +100,9 @@ export const useOrbitStore = (selector?: any) => {
   React.useEffect(() => {
     const l = () => setTick(t=>t+1);
     listeners.add(l);
-    // Load from localStorage on mount (client side)
     const loaded = safeLoad();
     if (loaded) {
       memoryState = { ...memoryState, contacts: loaded.contacts||[], interactions: loaded.interactions||[], tags: loaded.tags||['Work','Family','Friends'], groups: loaded.groups||[], reminders: loaded.reminders||[], } as any;
-      // re-add methods below
       Object.assign(memoryState, methods);
       setTick(t=>t+1);
     }
@@ -108,7 +111,7 @@ export const useOrbitStore = (selector?: any) => {
 
   const methods: any = {
     addContact: (c: any) => {
-      const contact: Contact = { id:'c_'+Date.now(), name:c.name, type:c.type||'friend', energy:c.energy||'neutral', healthScore:100, createdAt:new Date().toISOString(), lastInteraction:null, birthday:c.birthday||null, notes:c.notes, tags:c.tags||[] };
+      const contact: Contact = { id:'c_'+Date.now(), name:c.name, type:c.type||'friend', energy:c.energy||'neutral', healthScore:100, createdAt:new Date().toISOString(), lastInteraction:null, birthday:c.birthday||null, notes:c.notes, tags:c.tags||[], groupId:c.groupId };
       memoryState.contacts = [contact, ...memoryState.contacts];
       safeSave(memoryState); notify(); return contact;
     },
@@ -116,14 +119,41 @@ export const useOrbitStore = (selector?: any) => {
     deleteContact: (id: string) => { memoryState.contacts = memoryState.contacts.filter(x=>x.id!==id); memoryState.interactions = memoryState.interactions.filter(x=>x.contactId!==id); memoryState.reminders = memoryState.reminders.filter(x=>x.contactId!==id); safeSave(memoryState); notify(); },
     addTag: (t: string) => { if (!memoryState.tags.includes(t)) { memoryState.tags = [...memoryState.tags, t]; safeSave(memoryState); notify(); } },
     removeTag: (t: string) => { memoryState.tags = memoryState.tags.filter(x=>x!==t); safeSave(memoryState); notify(); },
-    addGroup: (n: string) => { const g={id:'g_'+Date.now(), name:n}; memoryState.groups=[...memoryState.groups,g]; safeSave(memoryState); notify(); return g; },
-    deleteGroup: (id: string) => { memoryState.groups=memoryState.groups.filter(x=>x.id!==id); safeSave(memoryState); notify(); },
+    addGroup: (n: string, color?: string) => {
+      const trimmed = String(n||'').trim();
+      if (!trimmed) return { id:'', name:'' } as Group;
+      const existing = (memoryState.groups as any[]).find((g:any)=>g.name.toLowerCase()===trimmed.toLowerCase());
+      if (existing) return existing;
+      const col = color || GROUP_COLORS[memoryState.groups.length % GROUP_COLORS.length];
+      const g={id:'g_'+Date.now(), name:trimmed, color:col, createdAt:new Date().toISOString()} as Group;
+      memoryState.groups=[...memoryState.groups,g]; safeSave(memoryState); notify(); return g;
+    },
+    updateGroup: (id: string, u: any) => {
+      let updated: Group | null = null;
+      memoryState.groups = (memoryState.groups as any[]).map((gg:any)=>{
+        if (gg.id!==id) return gg;
+        const next = { ...gg, ...(u.name!==undefined ? { name: String(u.name).trim()||gg.name } : {}), ...(u.color!==undefined ? { color: u.color } : {}) };
+        updated = next;
+        return next;
+      });
+      safeSave(memoryState); notify(); return updated;
+    },
+    deleteGroup: (id: string) => {
+      memoryState.groups=memoryState.groups.filter(x=>x.id!==id);
+      memoryState.contacts = (memoryState.contacts as any[]).map((c:any)=> c.groupId===id ? { ...c, groupId: undefined } : c);
+      safeSave(memoryState); notify();
+    },
     addInteraction: (i: any) => { const inter: Interaction={id:'i_'+Date.now(), contactId:i.contactId, date:i.date||new Date().toISOString(), type:i.type||'other', summary:i.summary||'', topics:i.topics, sentiment:i.sentiment, energy:i.energy, createdAt:new Date().toISOString()}; memoryState.contacts=memoryState.contacts.map(c=>c.id===i.contactId?{...c,lastInteraction:inter.date}:c); memoryState.interactions=[inter,...memoryState.interactions]; safeSave(memoryState); notify(); return inter; },
     getContactWithInteractions: (contactId: string) => ({ contact: memoryState.contacts.find(c=>c.id===contactId), interactions: memoryState.interactions.filter(i=>i.contactId===contactId).sort((a,b)=>new Date(b.date).getTime()-new Date(a.date).getTime()) }),
     calculateHealthScore: calcHealth,
     getNeedingAttention: () => memoryState.contacts.map(c=>({...c, healthScore:calcHealth(c.id)})).filter((c:any)=>c.healthScore<70).sort((a:any,b:any)=>a.healthScore-b.healthScore),
     getByType: (type: string) => memoryState.contacts.filter(c=>c.type===type),
     getStats: () => { const byType: any={}; memoryState.contacts.forEach(c=>{byType[c.type]=(byType[c.type]||0)+1;}); return { totalContacts:memoryState.contacts.length, totalInteractions:memoryState.interactions.length, byType }; },
+    getGroupCounts: () => {
+      const counts: Record<string, number> = {};
+      (memoryState.contacts as any[]).forEach((c:any)=>{ if (c.groupId) counts[c.groupId]=(counts[c.groupId]||0)+1; });
+      return counts;
+    },
     addReminder: (r: any) => { const rem: Reminder={id:'r_'+Date.now(), contactId:r.contactId, message:r.message, dueDate:r.dueDate||new Date().toISOString(), done:false, createdAt:new Date().toISOString()}; memoryState.reminders=[rem,...memoryState.reminders]; safeSave(memoryState); notify(); return rem; },
     updateReminder: (id: string, u: any) => { memoryState.reminders=memoryState.reminders.map((rr: any)=>rr.id===id?{...rr, ...u}:rr); safeSave(memoryState); notify(); },
     toggleReminder: (id: string) => { memoryState.reminders=memoryState.reminders.map(rr=>rr.id===id?{...rr,done:!rr.done}:rr); safeSave(memoryState); notify(); },
@@ -155,7 +185,7 @@ export const useOrbitStore = (selector?: any) => {
         const key = norm(nm);
         if (existingNorm.has(key) || seen.has(key)) { skipped++; continue; }
         seen.add(key);
-        const contact: Contact = { id:'c_'+Date.now()+'_'+newOnes.length+'_'+Math.random().toString(36).slice(2,5), name:nm, type:'acquaintance' as any, energy:'neutral' as any, healthScore:100, createdAt:new Date().toISOString(), lastInteraction:null, birthday: it.birthday||null, notes: it.notes||'', tags: it.tags||[] };
+        const contact: Contact = { id:'c_'+Date.now()+'_'+newOnes.length+'_'+Math.random().toString(36).slice(2,5), name:nm, type:'acquaintance' as any, energy:'neutral' as any, healthScore:100, createdAt:new Date().toISOString(), lastInteraction:null, birthday: it.birthday||null, notes: it.notes||'', tags: it.tags||[] } as any;
         newOnes.push(contact);
       }
       if (newOnes.length) {
@@ -166,7 +196,6 @@ export const useOrbitStore = (selector?: any) => {
     },
   };
 
-  // Merge methods into memoryState for selector access
   Object.assign(memoryState, methods);
   const fullState = memoryState as any;
 

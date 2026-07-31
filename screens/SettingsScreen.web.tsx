@@ -1,7 +1,6 @@
-/* web shim - auto-generated from native, SafeAreaView -> View stripped */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Share, RefreshControl } from 'react-native';
-import { useOrbitStore } from '../stores/orbitStore';
+import { useOrbitStore, GROUP_COLORS } from '../stores/orbitStore';
 import { theme, formatTimeAgo } from '../src/theme';
 import { Input } from '../src/components/Input';
 import { Button } from '../src/components/Button';
@@ -18,17 +17,26 @@ export default function SettingsScreen({ navigation }: any) {
   const addTag = useOrbitStore((s) => s.addTag);
   const removeTag = useOrbitStore((s) => s.removeTag);
   const addGroup = useOrbitStore((s) => s.addGroup);
+  const updateGroup = useOrbitStore((s) => s.updateGroup);
   const deleteGroup = useOrbitStore((s) => s.deleteGroup);
+  const getGroupCounts = useOrbitStore((s) => s.getGroupCounts);
   const { user: tameUser, provider } = useIdentity();
   const nav = useNavigation<any>();
   const [newTag, setNewTag] = useState('');
   const [newGroupName, setNewGroupName] = useState('');
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupColor, setEditGroupColor] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(()=>{
     setRefreshing(true);
     setTimeout(()=> setRefreshing(false), 600);
   }, []);
+
+  const groupCounts = useMemo(()=>{
+    try { return getGroupCounts(); } catch { return {} as Record<string, number>; }
+  }, [contacts, groups]);
 
   const handleAddTag = () => {
     const t = newTag.trim();
@@ -43,9 +51,24 @@ export default function SettingsScreen({ navigation }: any) {
     const n = newGroupName.trim();
     if (!n) return;
     if (n.length > 30) { Alert.alert('Too long', 'Max 30 chars'); return; }
-    addGroup(n);
-    logger.info('Settings', 'add group', { name: n });
+    const g = addGroup(n);
+    logger.info('Settings', 'add group', { name: n, id: g?.id });
     setNewGroupName('');
+  };
+
+  const startEditGroup = (g: any) => {
+    setEditingGroupId(g.id);
+    setEditGroupName(g.name);
+    setEditGroupColor(g.color || GROUP_COLORS[0]);
+  };
+
+  const saveEditGroup = () => {
+    if (!editingGroupId) return;
+    const n = editGroupName.trim();
+    if (!n) { Alert.alert('Name required','Group name cannot be empty'); return; }
+    updateGroup(editingGroupId, { name: n, color: editGroupColor });
+    logger.info('Settings', 'edit group', { id: editingGroupId, name: n });
+    setEditingGroupId(null);
   };
 
   const handleExport = async () => {
@@ -57,9 +80,27 @@ export default function SettingsScreen({ navigation }: any) {
     } catch {}
   };
 
+  const handleViewGroup = (group: any) => {
+    // quick filter: navigate to ContactsList would need param, instead show members
+    const count = groupCounts[group.id]||0;
+    const memberNames = contacts.filter((c:any)=>c.groupId===group.id).map((c:any)=>c.name).slice(0,8).join(', ');
+    Alert.alert(`${group.name} • ${count} contacts`, memberNames ? `Members: ${memberNames}${count>8 ? ` +${count-8} more` : ''}` : 'No contacts in this group yet. Add contacts to this group from Add Contact or Contact Detail.', [
+      { text: 'Close', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: ()=>{
+        Alert.alert(`Delete group "${group.name}"?`, count ? `${count} contacts will lose group link but stay. Cannot be undone.` : 'Cannot be undone.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: ()=> {
+            deleteGroup(group.id);
+            logger.info('Settings', 'delete group', { id: group.id, count });
+          }},
+        ]);
+      }},
+    ]);
+  };
+
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.text} />}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.text} />} keyboardShouldPersistTaps="handled">
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Tame ID — Unified Login</Text>
           <View style={styles.row}><Text style={styles.rowLabel}>Provider</Text><Text style={styles.rowValue}>{provider || 'mock'}</Text></View>
@@ -81,10 +122,10 @@ export default function SettingsScreen({ navigation }: any) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Tags Management</Text>
-          <Text style={styles.sectionHint}>{tags.length} tags • Tap chip to remove</Text>
+          <Text style={styles.sectionHint}>{tags.length} tags • Tap chip to remove • Used in Add Contact + filter</Text>
           <View style={styles.inputRow}>
             <View style={{flex:1}}>
-              <Input placeholder="Add new tag..." value={newTag} onChangeText={setNewTag} maxLength={30} returnKeyType="done" onSubmitEditing={handleAddTag} accessibilityLabel="New tag" />
+              <Input placeholder="Add new tag... e.g. Gym, Book club" value={newTag} onChangeText={setNewTag} maxLength={30} returnKeyType="done" onSubmitEditing={handleAddTag} accessibilityLabel="New tag" />
             </View>
             <Button title="Add" onPress={handleAddTag} variant="primary" size="s" style={{ marginLeft: theme.spacing.s, marginTop: 2 } as any} disabled={!newTag.trim()} />
           </View>
@@ -100,34 +141,70 @@ export default function SettingsScreen({ navigation }: any) {
                 <Text style={styles.removeIcon}>✕</Text>
               </TouchableOpacity>
             ))}
-            {tags.length===0 ? <Text style={styles.empty}>No tags yet. Add one to organize contacts — like Work, Family, Friends.</Text> : null}
+            {tags.length===0 ? <Text style={styles.empty}>No tags yet. Add one to organize contacts — like Gym, Book club, Coworkers.</Text> : null}
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Groups Management</Text>
-          <Text style={styles.sectionHint}>{groups.length} groups • Tap row to delete</Text>
+          <View style={styles.sectionHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionTitle}>Groups Management</Text>
+              <Text style={styles.sectionHint}>{groups.length} groups • {Object.values(groupCounts).reduce((a:number,b:any)=>a+(b as number),0)} grouped contacts • Tap to view members, ✎ edit, color, delete</Text>
+            </View>
+          </View>
           <View style={styles.inputRow}>
             <View style={{flex:1}}>
-              <Input placeholder="Group name..." value={newGroupName} onChangeText={setNewGroupName} maxLength={30} returnKeyType="done" onSubmitEditing={handleAddGroup} accessibilityLabel="New group" />
+              <Input placeholder="Group name... e.g. Founders, Climbing" value={newGroupName} onChangeText={setNewGroupName} maxLength={30} returnKeyType="done" onSubmitEditing={handleAddGroup} accessibilityLabel="New group" />
             </View>
             <Button title="Add" onPress={handleAddGroup} variant="primary" size="s" style={{ marginLeft: theme.spacing.s, marginTop: 2 } as any} disabled={!newGroupName.trim()} />
           </View>
+
           <View style={styles.groupList}>
-            {groups.map((group: any) => (
-              <TouchableOpacity key={group.id} style={styles.groupItem} onPress={() => {
-                Alert.alert(`Delete group?`, `"${group.name}" — contacts in group stay but lose group link.`, [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Delete', style: 'destructive', onPress: ()=> deleteGroup(group.id) },
-                ]);
-              }} activeOpacity={0.7} accessibilityRole="button">
-                <View style={styles.groupDot} />
-                <Text style={styles.groupText}>{group.name}</Text>
-                <Text style={styles.removeIcon}>✕</Text>
-              </TouchableOpacity>
-            ))}
-            {groups.length===0 ? <Text style={styles.empty}>No groups yet. Groups help you cluster contacts for Insights Map view.</Text> : null}
+            {groups.map((g: any) => {
+              const isEditing = editingGroupId===g.id;
+              const count = groupCounts[g.id]||0;
+              if (isEditing) {
+                return (
+                  <View key={g.id} style={styles.groupEditCard}>
+                    <Input placeholder="Group name" value={editGroupName} onChangeText={setEditGroupName} maxLength={30} accessibilityLabel="Edit group name" />
+                    <View style={styles.colorRow}>
+                      <Text style={styles.colorLabel}>Color:</Text>
+                      {GROUP_COLORS.map((col:string)=>
+                        <TouchableOpacity key={col} style={[styles.colorDot, { backgroundColor: col }, editGroupColor===col && styles.colorDotActive]} onPress={()=>setEditGroupColor(col)} accessibilityLabel={`Color ${col}`} activeOpacity={0.7} />
+                      )}
+                    </View>
+                    <View style={styles.editActions}>
+                      <Button title="Save" onPress={saveEditGroup} size="s" />
+                      <Button title="Cancel" onPress={()=>setEditingGroupId(null)} variant="ghost" size="s" />
+                    </View>
+                  </View>
+                );
+              }
+              return (
+                <View key={g.id} style={styles.groupItemRow}>
+                  <TouchableOpacity style={styles.groupItemMain} onPress={()=>handleViewGroup(g)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`View ${g.name} group ${count} members`}>
+                    <View style={[styles.groupDotLarge, { backgroundColor: g.color || theme.colors.primary }]} />
+                    <View style={styles.groupInfo}>
+                      <Text style={styles.groupText} numberOfLines={1}>{g.name}</Text>
+                      <Text style={styles.groupMeta}>{count} {count===1?'contact':'contacts'}{g.createdAt ? ` • ${formatTimeAgo(g.createdAt)}` : ''}</Text>
+                    </View>
+                    <View style={styles.countPill}><Text style={styles.countText}>{count}</Text></View>
+                  </TouchableOpacity>
+                  <View style={styles.groupItemActions}>
+                    <TouchableOpacity onPress={()=>startEditGroup(g)} hitSlop={8} accessibilityLabel={`Edit ${g.name}`}><Text style={styles.actionEdit}>✎</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={()=>{
+                      Alert.alert(`Delete "${g.name}"?`, `${count} contacts will lose group link but stay.`, [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: ()=> { deleteGroup(g.id); logger.info('Settings','delete group',{ id: g.id, count }); }},
+                      ]);
+                    }} hitSlop={8} accessibilityLabel={`Delete ${g.name}`}><Text style={styles.actionDelete}>✕</Text></TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+            {groups.length===0 ? <Text style={styles.empty}>No groups yet. Groups cluster contacts for Contacts filter • Map quadrants • Insights type breakdown. Create your first — e.g. Inner Circle, Work, Gym, Family.</Text> : null}
           </View>
+          <Text style={styles.hint}>Groups are local. Filter by group in ContactsList, see clusters in Map, assign in Add Contact & Contact Detail inline picker.</Text>
         </View>
 
         <View style={styles.section}>
@@ -136,7 +213,8 @@ export default function SettingsScreen({ navigation }: any) {
           <View style={styles.row}><Text style={styles.rowLabel}>Interactions</Text><Text style={styles.rowValue}>{interactions.length}</Text></View>
           <View style={styles.row}><Text style={styles.rowLabel}>Reminders</Text><Text style={styles.rowValue}>{reminders.length}</Text></View>
           <View style={styles.row}><Text style={styles.rowLabel}>Tags</Text><Text style={styles.rowValue}>{tags.length}</Text></View>
-          <View style={styles.row}><Text style={styles.rowLabel}>Groups</Text><Text style={styles.rowValue}>{groups.length}</Text></View>
+          <View style={styles.row}><Text style={styles.rowLabel}>Groups</Text><Text style={styles.rowValue}>{groups.length} • {Object.keys(groupCounts).length} with members</Text></View>
+          <View style={styles.row}><Text style={styles.rowLabel}>Grouped</Text><Text style={styles.rowValue}>{Object.values(groupCounts).reduce((a:number,b:any)=>a+(b as number),0)} contacts in groups</Text></View>
           <View style={styles.row}><Text style={styles.rowLabel}>Last updated</Text><Text style={styles.rowValue}>{contacts.length ? formatTimeAgo(contacts[0]?.createdAt || new Date().toISOString()) : 'never'}</Text></View>
           <View style={{height:8}} />
           <Button title="Export JSON" onPress={handleExport} variant="secondary" size="s" accessibilityLabel="Export data" />
@@ -145,22 +223,23 @@ export default function SettingsScreen({ navigation }: any) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quality Checklist</Text>
           <View style={styles.checkList}>
-            <Text style={styles.checkRow}>• Pull-to-refresh on all lists</Text>
-            <Text style={styles.checkRow}>• Time-ago + full date everywhere</Text>
-            <Text style={styles.checkRow}>• Keyboard avoiding + dismiss + char limits</Text>
-            <Text style={styles.checkRow}>• Empty states with actions</Text>
-            <Text style={styles.checkRow}>• Button/Input design system, accessibility</Text>
-            <Text style={styles.checkRow}>• Health score real formula (recency+energy+sentiment)</Text>
-            <Text style={styles.checkRow}>• Groups CRUD + Tags chip management</Text>
-            <Text style={styles.checkRow}>• Import from device contacts + dedup + birthday MM/DD</Text>
-            <Text style={styles.checkRow}>• Calendar sync for birthdays 60d (expo-calendar device)</Text>
+            <Text style={styles.checkRowDone}>✅ Pull-to-refresh on all lists</Text>
+            <Text style={styles.checkRowDone}>✅ Time-ago + full date everywhere</Text>
+            <Text style={styles.checkRowDone}>✅ Keyboard avoiding + dismiss + char limits</Text>
+            <Text style={styles.checkRowDone}>✅ Empty states with actions</Text>
+            <Text style={styles.checkRowDone}>✅ Button/Input design system, accessibility</Text>
+            <Text style={styles.checkRowDone}>✅ Health score real formula (recency+energy+sentiment)</Text>
+            <Text style={styles.checkRowDone}>✅ Groups full CRUD + color dots + counts + filter chips + inline pickers</Text>
+            <Text style={styles.checkRowDone}>✅ Tags chip management + group badge on cards</Text>
+            <Text style={styles.checkRowDone}>✅ Import from device contacts + dedup + birthday MM/DD</Text>
+            <Text style={styles.checkRowDone}>✅ Calendar sync for birthdays 60d (expo-calendar device)</Text>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.aboutText}>Orbit v2.3 — Map your relationships. Local-first, zero tracking. Health = recency 30% + frequency 30% + energy 35% + sentiment 5%. Import from phone contacts with dedup, birthdays MM/DD, calendar sync 60d with alarms. Part of TameLabs.</Text>
-          <Text style={styles.aboutVersion}>v2.3 • import + calendar • {new Date().getFullYear()}</Text>
+          <Text style={styles.aboutText}>Orbit v2.6 — Map your relationships. Local-first, zero tracking. Health = recency 30% + frequency 30% + energy 35% + sentiment 5%. Groups: cluster contacts, filter Contacts list by group, assign in Add Contact + Detail, manage with colors + counts, Map & Insights respect groups. Tags: organize by interest. Import from phone contacts with dedup, birthdays MM/DD, calendar sync 60d with alarms. Part of TameLabs.</Text>
+          <Text style={styles.aboutVersion}>v2.6 • groups full support • {new Date().getFullYear()}</Text>
         </View>
 
         <View style={{ height: 24 }} />
@@ -174,23 +253,39 @@ const styles = StyleSheet.create({
   content: { padding: theme.spacing.l, gap: theme.spacing.ml, paddingBottom: 96 },
   section: { padding: theme.spacing.ml, backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.l, borderWidth: 1, borderColor: theme.colors.border, ...theme.shadows.card, gap: theme.spacing.s },
   sectionTitle: { ...theme.typography.label, color: theme.colors.text, marginBottom: 2 },
+  sectionHeader: { marginBottom: theme.spacing.s },
   sectionHint: { ...theme.typography.micro, color: theme.colors.textTertiary, marginBottom: theme.spacing.s },
   inputRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: theme.spacing.s },
   tagList: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.s },
   tagChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surfaceHover, paddingHorizontal: theme.spacing.m, paddingVertical: 6, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.border, gap: 6, ...theme.shadows.chip },
   tagText: { ...theme.typography.caption, color: theme.colors.text },
   groupList: { gap: theme.spacing.s },
-  groupItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surfaceHover, padding: theme.spacing.m, borderRadius: theme.borderRadius.m, borderWidth: 1, borderColor: theme.colors.border, gap: theme.spacing.s, ...theme.shadows.chip },
-  groupDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.primary },
-  groupText: { ...theme.typography.bodySmall, color: theme.colors.text, flex: 1 },
+  groupItemRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surfaceHover, borderRadius: theme.borderRadius.m, borderWidth: 1, borderColor: theme.colors.border, ...theme.shadows.chip },
+  groupItemMain: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: theme.spacing.m, gap: theme.spacing.s },
+  groupDotLarge: { width: 12, height: 12, borderRadius: 6 },
+  groupInfo: { flex: 1, gap: 2 },
+  groupText: { ...theme.typography.bodySmall, color: theme.colors.text, fontWeight: '600' as any },
+  groupMeta: { ...theme.typography.micro, color: theme.colors.textTertiary },
+  countPill: { backgroundColor: theme.colors.surface, paddingHorizontal: 8, paddingVertical: 2, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.borderLight },
+  countText: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: '600' as any },
+  groupItemActions: { flexDirection: 'row', alignItems: 'center', paddingRight: theme.spacing.m, gap: theme.spacing.m },
+  actionEdit: { fontSize: 16, color: theme.colors.textSecondary },
+  actionDelete: { fontSize: 14, color: theme.colors.textTertiary, fontWeight: '600' as any },
+  groupEditCard: { backgroundColor: theme.colors.surface, padding: theme.spacing.m, borderRadius: theme.borderRadius.m, borderWidth: 1, borderColor: theme.colors.primary, gap: theme.spacing.s },
+  colorRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.s, flexWrap: 'wrap' as const },
+  colorLabel: { ...theme.typography.micro, color: theme.colors.textSecondary },
+  colorDot: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: 'transparent' },
+  colorDotActive: { borderColor: theme.colors.text, borderWidth: 2 },
+  editActions: { flexDirection: 'row', gap: theme.spacing.s, marginTop: theme.spacing.s },
   removeIcon: { color: theme.colors.textTertiary, fontSize: 14, fontWeight: '600' as any },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 2 },
   rowLabel: { ...theme.typography.caption, color: theme.colors.textSecondary },
   rowValue: { ...theme.typography.caption, color: theme.colors.text, fontWeight: '600' as const, maxWidth: 180, textAlign: 'right' as any },
-  hint: { ...theme.typography.micro, color: theme.colors.textTertiary, marginTop: 6, fontStyle: 'italic' as any },
+  hint: { ...theme.typography.micro, color: theme.colors.textTertiary, marginTop: 6, fontStyle: 'italic' as any, lineHeight: 14 },
   empty: { ...theme.typography.caption, color: theme.colors.textTertiary, fontStyle: 'italic' as any, marginTop: 4, lineHeight: 16 },
   checkList: { gap: 6, marginTop: theme.spacing.s },
   checkRow: { ...theme.typography.caption, color: theme.colors.textTertiary },
+  checkRowDone: { ...theme.typography.caption, color: theme.colors.textSecondary },
   aboutText: { ...theme.typography.bodySmall, color: theme.colors.textSecondary, lineHeight: 20 },
   aboutVersion: { ...theme.typography.micro, color: theme.colors.textTertiary, marginTop: theme.spacing.s },
 });

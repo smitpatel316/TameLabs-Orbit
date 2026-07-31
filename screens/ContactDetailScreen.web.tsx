@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, Share } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, Share, ScrollView as RNScroll } from 'react-native';
 import { useOrbitStore, RELATIONSHIP_TYPES, ENERGY_LEVELS } from '../stores/orbitStore';
 import { theme, formatTimeAgo, formatDate, getHealthColor, formatFullDate } from '../src/theme';
 import { Button } from '../src/components/Button';
@@ -10,11 +10,14 @@ export default function ContactDetailScreen({ route, navigation }: any) {
   const { id } = route.params;
   const contacts = useOrbitStore(s => s.contacts);
   const interactions = useOrbitStore(s => s.interactions);
+  const groups = useOrbitStore(s => s.groups);
   const deleteContact = useOrbitStore(s => s.deleteContact);
+  const updateContact = useOrbitStore(s => s.updateContact);
   const calculateHealthScore = useOrbitStore(s => s.calculateHealthScore);
   const contact = contacts.find(c=>c.id===id);
   const contactInteractions = interactions.filter(i=>i.contactId===id).sort((a:any,b:any)=>b.createdAt.localeCompare(a.createdAt));
   const [refreshing, setRefreshing] = useState(false);
+  const [showGroupPicker, setShowGroupPicker] = useState(false);
 
   const onRefresh = useCallback(()=>{
     setRefreshing(true);
@@ -25,7 +28,7 @@ export default function ContactDetailScreen({ route, navigation }: any) {
   if (!contact) {
     return (
       <View style={styles.containerError}>
-        <EmptyState title="Not found" description="Contact no longer exists." icon="search" action={{ label: 'Go back', onPress: ()=>navigation.goBack() }} />
+        <EmptyState title="Not found" description="Contact no longer exists." icon="search" action={{ label: 'Go back', onPress: ()=>navigation.goBack() } as any} />
       </View>
     );
   }
@@ -33,6 +36,7 @@ export default function ContactDetailScreen({ route, navigation }: any) {
   const type = (RELATIONSHIP_TYPES as any)[contact.type] || RELATIONSHIP_TYPES.acquaintance;
   const health = calculateHealthScore(id);
   const energy = (ENERGY_LEVELS as any)[contact.energy] || ENERGY_LEVELS.neutral;
+  const group = groups.find((g:any)=> g.id === contact.groupId);
 
   const handleDelete = () => {
     Alert.alert('Delete contact?', `${contact.name} and all ${contactInteractions.length} interactions will be removed. This cannot be undone.`, [
@@ -47,13 +51,19 @@ export default function ContactDetailScreen({ route, navigation }: any) {
 
   const handleShare = async () => {
     try {
-      await Share.share({ message: `${contact.name} - ${type.label} - Health ${health}% - Orbit relationship map` });
+      await Share.share({ message: `${contact.name} - ${type.label}${group ? ` - ${group.name}` : ''} - Health ${health}% - Orbit relationship map` });
     } catch {}
+  };
+
+  const handleChangeGroup = (groupId?: string) => {
+    updateContact(id, { groupId } as any);
+    setShowGroupPicker(false);
+    logger.info('ContactDetail', 'changed group', { id, groupId });
   };
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.text} />}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.text} />} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <View style={[styles.avatar, { backgroundColor: type.color }]}>
             <Text style={styles.avatarText}>{(contact.name?.[0]||'?').toUpperCase()}</Text>
@@ -62,6 +72,12 @@ export default function ContactDetailScreen({ route, navigation }: any) {
           <View style={styles.metaRow}>
             <View style={styles.typeBadge}><Text style={styles.typeBadgeText}>{type.emoji} {type.label}</Text></View>
             <View style={[styles.healthBadge, { backgroundColor: getHealthColor(health) }]}><Text style={styles.healthBadgeText}>{health}% health</Text></View>
+            {group ? (
+              <View style={[styles.groupBadge, { borderColor: group.color || theme.colors.border }]}>
+                <View style={[styles.groupDotSmall, { backgroundColor: group.color || theme.colors.primary }]} />
+                <Text style={styles.groupBadgeText}>{group.name}</Text>
+              </View>
+            ) : null}
           </View>
           <Text style={styles.created}>Added {formatTimeAgo(contact.createdAt)} • {formatDate(contact.createdAt)}</Text>
           {contact.birthday ? <Text style={styles.birthday}>Birthday {contact.birthday}</Text> : null}
@@ -72,7 +88,26 @@ export default function ContactDetailScreen({ route, navigation }: any) {
           </View>
           <View style={styles.headerActions}>
             <Button title="Share" onPress={handleShare} variant="secondary" size="s" />
+            <Button title={group ? `Group: ${group.name}` : 'Add to group'} onPress={()=>setShowGroupPicker(!showGroupPicker)} variant={group ? 'primary' : 'secondary'} size="s" accessibilityLabel="Change group" />
           </View>
+
+          {showGroupPicker ? (
+            <View style={styles.groupPickerSection}>
+              <Text style={styles.groupPickerTitle}>Change group — tap to assign</Text>
+              <View style={styles.groupPickerRow}>
+                <TouchableOpacity style={[styles.groupPickChip, !contact.groupId && styles.groupPickChipActive]} onPress={()=>handleChangeGroup(undefined)} activeOpacity={0.7} accessibilityLabel="Remove from group">
+                  <Text style={[styles.groupPickText, !contact.groupId && styles.groupPickTextActive]}>No group</Text>
+                </TouchableOpacity>
+                {groups.map((g:any)=>
+                  <TouchableOpacity key={g.id} style={[styles.groupPickChip, { borderColor: g.color || theme.colors.border }, contact.groupId===g.id && { backgroundColor: g.color || theme.colors.primary, borderColor: g.color || theme.colors.primary }]} onPress={()=>handleChangeGroup(g.id)} activeOpacity={0.7} accessibilityLabel={`Assign to ${g.name}`}>
+                    <View style={[styles.groupDotSmall, { backgroundColor: contact.groupId===g.id ? '#FFF' : g.color || theme.colors.primary }]} />
+                    <Text style={[styles.groupPickText, contact.groupId===g.id && styles.groupPickTextActive]} numberOfLines={1}>{g.name}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Text style={styles.groupPickerHint}>Group appears in Contacts filter + Map clusters • Manage groups in Settings</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.statsRow}>
@@ -99,7 +134,7 @@ export default function ContactDetailScreen({ route, navigation }: any) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Notes</Text>
             <Text style={styles.notes}>{contact.notes}</Text>
-            <Text style={styles.notesMeta}>Stored locally • {formatFullDate(contact.createdAt)}</Text>
+            <Text style={styles.notesMeta}>Stored locally • {formatFullDate(contact.createdAt)}{group ? ` • ${group.name}` : ''}</Text>
           </View>
         ) : null}
 
@@ -160,12 +195,25 @@ const styles = StyleSheet.create({
   typeBadgeText: { ...theme.typography.caption, color: theme.colors.textSecondary },
   healthBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadius.pill },
   healthBadgeText: { color: '#FFF', fontSize: 11, fontWeight: '700' as any },
+  groupBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.colors.surfaceMuted, paddingHorizontal: 8, paddingVertical: 4, borderRadius: theme.borderRadius.pill, borderWidth: 1 },
+  groupBadgeText: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: '600' as any },
+  groupDotSmall: { width: 8, height: 8, borderRadius: 4 },
   created: { ...theme.typography.caption, color: theme.colors.textTertiary, marginTop: 2 },
   birthday: { color: theme.colors.warning, fontWeight: '600' as any, fontSize: 12, marginTop: 2 },
   tagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: theme.spacing.s, justifyContent: 'center' },
-  miniTag: { backgroundColor: theme.colors.surfaceHover, paddingHorizontal: 8, paddingVertical: 2, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.borderLight },
-  miniTagText: { ...theme.typography.micro, color: theme.colors.textSecondary },
-  headerActions: { marginTop: theme.spacing.s },
+  miniTag: { backgroundColor: theme.colors.tagBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.borderLight },
+  miniTagText: { fontSize: 11, color: theme.colors.tagText, fontWeight: '500' as any },
+  headerActions: { flexDirection: 'row', gap: theme.spacing.s, marginTop: theme.spacing.s, flexWrap: 'wrap', justifyContent: 'center' },
+
+  groupPickerSection: { width: '100%', backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.borderRadius.m, padding: theme.spacing.m, borderWidth: 1, borderColor: theme.colors.borderLight, gap: theme.spacing.s, marginTop: theme.spacing.s },
+  groupPickerTitle: { ...theme.typography.labelSmall, color: theme.colors.textSecondary },
+  groupPickerRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.s },
+  groupPickChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, paddingHorizontal: 10, paddingVertical: 6, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.border, gap: 6, ...theme.shadows.chip },
+  groupPickChipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  groupPickText: { ...theme.typography.caption, color: theme.colors.textSecondary, maxWidth: 100 },
+  groupPickTextActive: { color: '#FFF', fontWeight: '600' as any },
+  groupPickerHint: { ...theme.typography.micro, color: theme.colors.textTertiary, fontStyle: 'italic' as any },
+
   statsRow: { flexDirection: 'row', gap: theme.spacing.s },
   statCard: { flex: 1, alignItems: 'center', backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.l, padding: theme.spacing.m, borderWidth: 1, borderColor: theme.colors.border, ...theme.shadows.card, gap: 2 },
   statValue: { color: theme.colors.text, fontSize: 18, fontWeight: '800' as any },

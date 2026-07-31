@@ -1,4 +1,4 @@
-// Orbit Store - Relationship management (Fixed syntax errors, fully typed)
+// Orbit Store - Relationship management with Groups full support v2.6
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,6 +18,8 @@ export const ENERGY_LEVELS: Record<string, { value: number; label: string; color
   good: { value: 1, label: 'Good', color: '#38A169' },
   nourishing: { value: 2, label: 'Nourishing', color: '#3182CE' },
 };
+
+export const GROUP_COLORS = ['#111827', '#E53E3E', '#3182CE', '#D69E2E', '#10B981', '#D53F8C', '#805AD5', '#ED8936'];
 
 export type Contact = {
   id: string;
@@ -45,7 +47,7 @@ export type Interaction = {
   createdAt: string;
 };
 
-export type Group = { id: string; name: string; color?: string };
+export type Group = { id: string; name: string; color?: string; createdAt?: string };
 export type Reminder = { id: string; contactId: string; message: string; dueDate: string; done: boolean; createdAt: string };
 
 interface OrbitState {
@@ -59,7 +61,8 @@ interface OrbitState {
   deleteContact: (id: string) => void;
   addTag: (tag: string) => void;
   removeTag: (tag: string) => void;
-  addGroup: (name: string) => Group;
+  addGroup: (name: string, color?: string) => Group;
+  updateGroup: (id: string, updates: Partial<Pick<Group, 'name' | 'color'>>) => Group | null;
   deleteGroup: (id: string) => void;
   addInteraction: (i: Partial<Interaction> & { contactId: string }) => Interaction;
   getContactWithInteractions: (contactId: string) => { contact?: Contact; interactions: Interaction[] };
@@ -67,6 +70,7 @@ interface OrbitState {
   getNeedingAttention: () => Contact[];
   getByType: (type: string) => Contact[];
   getStats: () => { totalContacts: number; totalInteractions: number; byType: Record<string, number> };
+  getGroupCounts: () => Record<string, number>;
   addReminder: (r: Partial<Reminder> & { contactId: string; message: string }) => Reminder;
   updateReminder: (id: string, updates: Partial<Reminder>) => void;
   toggleReminder: (id: string) => void;
@@ -74,6 +78,10 @@ interface OrbitState {
   snoozeReminder: (id: string, days: number) => void;
   getReminderGroups: () => { overdue: Reminder[]; today: Reminder[]; upcoming: Reminder[]; done: Reminder[] };
   bulkImportContacts: (contacts: { name: string; birthday?: string | null; notes?: string; tags?: string[] }[]) => { imported: number; skipped: number; importedContacts: Contact[] };
+}
+
+function genId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
 export const useOrbitStore = create<OrbitState>()(
@@ -87,7 +95,7 @@ export const useOrbitStore = create<OrbitState>()(
 
       addContact: (contact) => {
         const newContact: Contact = {
-          id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
+          id: genId(),
           name: contact.name.trim(),
           type: (contact.type as any) || 'acquaintance',
           energy: (contact.energy as any) || 'neutral',
@@ -131,19 +139,44 @@ export const useOrbitStore = create<OrbitState>()(
         set((state) => ({ tags: state.tags.filter((t) => t !== tag) }));
       },
 
-      addGroup: (name) => {
-        const newGroup: Group = { id: Date.now().toString(), name: name.trim() };
+      addGroup: (name, color) => {
+        const trimmed = name.trim();
+        if (!trimmed) return { id: '', name: '' } as Group;
+        const existing = get().groups.find(g => g.name.toLowerCase() === trimmed.toLowerCase());
+        if (existing) return existing;
+        const col = color || GROUP_COLORS[get().groups.length % GROUP_COLORS.length];
+        const newGroup: Group = { id: genId(), name: trimmed, color: col, createdAt: new Date().toISOString() };
         set((state) => ({ groups: [...state.groups, newGroup] }));
         return newGroup;
       },
 
+      updateGroup: (id, updates) => {
+        let updated: Group | null = null;
+        set((state) => ({
+          groups: state.groups.map((g) => {
+            if (g.id !== id) return g;
+            const next = {
+              ...g,
+              ...(updates.name !== undefined ? { name: updates.name.trim() || g.name } : {}),
+              ...(updates.color !== undefined ? { color: updates.color } : {}),
+            };
+            updated = next;
+            return next;
+          }),
+        }));
+        return updated;
+      },
+
       deleteGroup: (id) => {
-        set((state) => ({ groups: state.groups.filter((g) => g.id !== id) }));
+        set((state) => ({
+          groups: state.groups.filter((g) => g.id !== id),
+          contacts: state.contacts.map((c) => (c.groupId === id ? { ...c, groupId: undefined } : c)),
+        }));
       },
 
       addInteraction: (interaction) => {
         const newInteraction: Interaction = {
-          id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
+          id: genId(),
           contactId: interaction.contactId,
           date: interaction.date || new Date().toISOString(),
           type: interaction.type || 'other',
@@ -185,7 +218,6 @@ export const useOrbitStore = create<OrbitState>()(
         const frequencyScore = Math.min(100, contactInteractions.length * 10);
         const energyValue = ENERGY_LEVELS[contact.energy]?.value ?? 0;
         const energyScore = ((energyValue + 2) / 4) * 100;
-        // bonus for positive sentiment
         const positiveCount = contactInteractions.filter((i) => i.sentiment === 'positive').length;
         const sentimentBonus = contactInteractions.length ? (positiveCount / contactInteractions.length) * 10 : 0;
         return Math.round(recencyScore * 0.3 + frequencyScore * 0.3 + energyScore * 0.35 + sentimentBonus * 0.05);
@@ -213,9 +245,18 @@ export const useOrbitStore = create<OrbitState>()(
         return { totalContacts: contacts.length, totalInteractions: interactions.length, byType: types };
       },
 
+      getGroupCounts: () => {
+        const { contacts } = get();
+        const counts: Record<string, number> = {};
+        contacts.forEach((c) => {
+          if (c.groupId) counts[c.groupId] = (counts[c.groupId] || 0) + 1;
+        });
+        return counts;
+      },
+
       addReminder: (r) => {
         const newRem: Reminder = {
-          id: Date.now().toString(),
+          id: genId(),
           contactId: r.contactId,
           message: r.message,
           dueDate: r.dueDate || new Date(Date.now() + 86400000 * 3).toISOString(),
@@ -286,7 +327,7 @@ export const useOrbitStore = create<OrbitState>()(
           seenInBatch.add(key);
           const now = new Date().toISOString();
           newOnes.push({
-            id: Date.now().toString() + Math.random().toString(36).slice(2, 6) + newOnes.length,
+            id: genId(),
             name: nm,
             type: 'acquaintance',
             energy: 'neutral',

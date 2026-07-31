@@ -59,7 +59,7 @@ export default function AuthScreen() {
       <Text style={styles.sub}>One account across Hubble, Orbit, Quiet. Local-first mock until Supabase/Keycloak configured.</Text>
       <View style={styles.inputCard}>
         <Text style={styles.label}>EMAIL (for mock or OTP)</Text>
-        <TextInput style={styles.input} placeholder="you@example.com" placeholderTextColor="#888" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+        <TextInput style={styles.input} placeholder="you@example.com" placeholderTextColor={theme.colors.textMuted} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
         <Button title={busy ? 'Signing in...' : 'Continue with Mock ID'} onPress={handleMockSignIn} disabled={busy} loading={busy} />
         <View style={{height:8}} />
         <TouchableOpacity onPress={async()=>{ try{ await signInWithOtp(email||'you@tamelabs.local'); Alert.alert('OTP sent (mock auto-signs in)'); }catch(e:any){ Alert.alert('OTP failed', e.message); } }}><Text style={styles.link}>Or use Email OTP (Supabase when configured)</Text></TouchableOpacity>
@@ -73,25 +73,25 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 16, backgroundColor: theme.colors?.background || '#FFFFFF' },
+  container: { flex: 1, padding: theme.spacing.l, gap: theme.spacing.ml, backgroundColor: theme.colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  muted: { color: '#888' },
-  title: { fontSize: 18, fontWeight: '800' as const, letterSpacing: -0.5, textAlign: 'center' },
-  sub: { fontSize: 13, color: '#666', textAlign: 'center', lineHeight: 18 },
-  card: { backgroundColor: (theme.colors as any)?.surface || '#F9F9F9', borderRadius: 16, padding: 20, alignItems: 'center', gap: 6, borderWidth: 1, borderColor: (theme.colors as any)?.border || '#EEE' },
-  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#000', color: '#FFF', textAlign: 'center', textAlignVertical: 'center' as any, lineHeight: 56, fontSize: 22, fontWeight: '700' as const },
-  name: { fontSize: 16, fontWeight: '700' as const },
-  email: { fontSize: 13, color: '#666' },
-  id: { fontSize: 10, color: '#999', fontFamily: 'monospace' as any, marginTop: 4 },
-  badge: { backgroundColor: '#000', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginTop: 4 },
-  badgeText: { color: '#FFF', fontSize: 11, fontWeight: '600' as const },
-  hint: { fontSize: 11, color: '#888', marginTop: 4, fontStyle: 'italic' },
-  inputCard: { backgroundColor: (theme.colors as any)?.surface || '#F9F9F9', borderRadius: 12, padding: 16, gap: 10, borderWidth: 1, borderColor: (theme.colors as any)?.border || '#EEE' },
-  label: { fontSize: 11, fontWeight: '700' as const, letterSpacing: 0.5, color: '#666' },
-  input: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: '#000' },
-  link: { fontSize: 12, color: '#666', textAlign: 'center', textDecorationLine: 'underline' },
-  providerCard: { backgroundColor: '#F2F2F7', borderRadius: 10, padding: 12, gap: 6 },
-  providerTitle: { fontSize: 12, fontWeight: '700' as const },
-  providerDesc: { fontSize: 11, color: '#666', lineHeight: 15 },
-  footer: { fontSize: 10, color: '#AAA', textAlign: 'center', marginTop: 8 },
+  muted: { color: theme.colors.textTertiary },
+  title: { ...theme.typography.h1, textAlign: 'center' as const },
+  sub: { ...theme.typography.bodySmall, color: theme.colors.textSecondary, textAlign: 'center' as const },
+  card: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.l, padding: theme.spacing.l, alignItems: 'center', gap: theme.spacing.s, borderWidth: 1, borderColor: theme.colors.border },
+  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: theme.colors.primary, color: theme.colors.onPrimary, textAlign: 'center', textAlignVertical: 'center' as any, lineHeight: 56, fontSize: 22, fontWeight: '700' as const },
+  name: { ...theme.typography.h3 },
+  email: { fontSize: 13, color: theme.colors.textSecondary },
+  id: { fontSize: 10, color: theme.colors.textTertiary, fontFamily: 'monospace' as any, marginTop: 4 },
+  badge: { backgroundColor: theme.colors.primary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadius.ml, marginTop: 4 },
+  badgeText: { color: theme.colors.onPrimary, fontSize: 11, fontWeight: '600' as const },
+  hint: { fontSize: 11, color: theme.colors.textTertiary, marginTop: 4, fontStyle: 'italic' as const },
+  inputCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.ml, padding: theme.spacing.ml, gap: theme.spacing.s, borderWidth: 1, borderColor: theme.colors.border },
+  label: { ...theme.typography.label, color: theme.colors.textSecondary },
+  input: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.borderRadius.m, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: theme.colors.text },
+  link: { fontSize: 12, color: theme.colors.textSecondary, textAlign: 'center', textDecorationLine: 'underline' },
+  providerCard: { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.borderRadius.m, padding: theme.spacing.m, gap: theme.spacing.s },
+  providerTitle: { fontSize: 12, fontWeight: '700' as const, color: theme.colors.text },
+  providerDesc: { fontSize: 11, color: theme.colors.textSecondary, lineHeight: 15 },
+  footer: { fontSize: 10, color: theme.colors.textTertiary, textAlign: 'center', marginTop: 8 },
 });

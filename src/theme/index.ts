@@ -1,3 +1,21 @@
+const HEALTH_PALETTE = {
+  excellent: '#059669',
+  good: '#10B981',
+  okay: '#F59E0B',
+  poor: '#F97316',
+  critical: '#EF4444',
+} as const;
+
+export const GROUP_COLORS = [
+  '#111827', '#E53E3E', '#3182CE', '#D69E2E',
+  '#10B981', '#D53F8C', '#805AD5', '#ED8936',
+] as const;
+
+export const MONTHS = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December',
+] as const;
+
 export const theme = {
   colors: {
     background: '#FFFFFF',
@@ -26,14 +44,9 @@ export const theme = {
     tagText: '#6B7280',
     skeleton: '#F3F4F6',
     overlay: 'rgba(0,0,0,0.4)',
-    health: {
-      excellent: '#059669',
-      good: '#10B981',
-      okay: '#F59E0B',
-      poor: '#F97316',
-      critical: '#EF4444',
-    },
+    health: HEALTH_PALETTE,
   },
+  health: HEALTH_PALETTE,
   spacing: { 
     xs: 4, 
     s: 8, 
@@ -94,11 +107,29 @@ export const RELATIONSHIP_COLORS: Record<string, string> = {
 };
 
 export function getHealthColor(h: number): string {
-  if (h>=80) return theme.colors.health.excellent;
-  if (h>=60) return theme.colors.health.good;
-  if (h>=40) return theme.colors.health.okay;
-  if (h>=20) return theme.colors.health.poor;
-  return theme.colors.health.critical;
+  if (h>=80) return theme.health.excellent;
+  if (h>=60) return theme.health.good;
+  if (h>=40) return theme.health.okay;
+  if (h>=20) return theme.health.poor;
+  return theme.health.critical;
+}
+
+export function getHubbleTierColor(tier: string): string {
+  switch(tier) {
+    case 'oracle': return '#FFD700';
+    case 'sharp': return '#111827';
+    case 'calibrated': return '#059669';
+    case 'novice': return '#6366F1';
+    default: return '#9CA3AF';
+  }
+}
+
+export function getHubbleTierLabel(brier: number, resolved: number): { tier: string, label: string } {
+  if (resolved < 3) return { tier: 'unranked', label: 'Unranked' };
+  if (brier >= 0.25) return { tier: 'novice', label: `Novice Brier ${brier.toFixed(3)}` };
+  if (brier >= 0.18) return { tier: 'calibrated', label: `Calibrated Brier ${brier.toFixed(3)}` };
+  if (brier >= 0.10) return { tier: 'sharp', label: `Sharp Brier ${brier.toFixed(3)}` };
+  return { tier: 'oracle', label: `Oracle Brier ${brier.toFixed(3)}` };
 }
 
 export function formatTimeAgo(iso: string): string {

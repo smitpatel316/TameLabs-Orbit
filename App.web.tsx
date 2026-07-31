@@ -56,7 +56,8 @@ function ContactsStack() {
 
 function OrbitTabs() {
   const insets = useSafeAreaInsets();
-  const bottomPad = Math.max(insets.bottom, Platform.OS === 'web' ? 8 : 6);
+  // Mobile: insets.bottom is 0-34 on iPhone gesture bar, need extra breathing room so nav not glued to bottom
+  const bottomPad = insets.bottom + (Platform.OS === 'web' ? 12 : 20);
   
   return (
     <Tab.Navigator
@@ -68,8 +69,8 @@ function OrbitTabs() {
           backgroundColor: theme.colors.background,
           borderTopWidth: 1,
           borderTopColor: theme.colors.borderLight,
-          height: 56 + bottomPad,
-          paddingTop: 6,
+          height: 60 + bottomPad,
+          paddingTop: 8,
           paddingBottom: bottomPad,
           paddingHorizontal: theme.spacing.s,
           ...theme.shadows.card,

@@ -56,8 +56,10 @@ function ContactsStack() {
 
 function OrbitTabs() {
   const insets = useSafeAreaInsets();
-  // Mobile: insets.bottom is 0-34 on iPhone gesture bar, need extra breathing room so nav not glued to bottom
-  const bottomPad = insets.bottom + (Platform.OS === 'web' ? 12 : 20);
+  // Mobile: insets.bottom is 0 on web mobile, 20-34 on native iPhone gesture bar
+  // Need generous padding so bar not cut off by browser UI - was cut off at 12/20
+  const baseBottomPad = Platform.OS === 'web' ? 28 : 36;
+  const bottomPad = insets.bottom + baseBottomPad;
   
   return (
     <Tab.Navigator
@@ -69,8 +71,8 @@ function OrbitTabs() {
           backgroundColor: theme.colors.background,
           borderTopWidth: 1,
           borderTopColor: theme.colors.borderLight,
-          height: 60 + bottomPad,
-          paddingTop: 8,
+          height: 70 + bottomPad,
+          paddingTop: 10,
           paddingBottom: bottomPad,
           paddingHorizontal: theme.spacing.s,
           ...theme.shadows.card,
@@ -80,7 +82,8 @@ function OrbitTabs() {
           fontSize: 10,
           fontWeight: '600' as const,
           letterSpacing: 0.3,
-          marginTop: 2,
+          marginTop: 4,
+          marginBottom: 2,
         },
         tabBarIcon: ({ focused }) => <TabIcon routeName={route.name} focused={focused} />,
         tabBarHideOnKeyboard: true,
@@ -117,9 +120,9 @@ const styles = StyleSheet.create({
   },
   activeDot: {
     position: 'absolute',
-    bottom: -6,
-    width: 3,
-    height: 3,
+    bottom: -4,
+    width: 4,
+    height: 4,
     borderRadius: 2,
     backgroundColor: theme.colors.primary,
   },

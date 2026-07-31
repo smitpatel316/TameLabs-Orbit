@@ -118,7 +118,7 @@ export default function JourneyMappingScreen({ route, navigation }: any) {
                     return <View key={i} style={[styles.energyDotLg, { backgroundColor: col }]} />;
                   })}
                 </View>
-                <Text style={styles.previewMeta} numberOfLines={1}>{stats.last3.join(' -> ')}</Text>
+                <Text style={styles.previewMeta} numberOfLines={1}>{stats.last3.join(' to ')}</Text>
               </View>
             )}
           </View>

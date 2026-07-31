@@ -54,8 +54,11 @@ type OrbitState = {
   getByType: (type: string) => Contact[];
   getStats: () => any;
   addReminder: (r: any) => Reminder;
+  updateReminder: (id: string, u: any) => void;
   toggleReminder: (id: string) => void;
   deleteReminder: (id: string) => void;
+  snoozeReminder: (id: string, days: number) => void;
+  getReminderGroups: () => { overdue: Reminder[]; today: Reminder[]; upcoming: Reminder[]; done: Reminder[] };
   bulkImportContacts: (incoming: { name: string; birthday?: string | null; notes?: string; tags?: string[] }[]) => BulkResult;
 };
 
@@ -122,8 +125,24 @@ export const useOrbitStore = (selector?: any) => {
     getByType: (type: string) => memoryState.contacts.filter(c=>c.type===type),
     getStats: () => { const byType: any={}; memoryState.contacts.forEach(c=>{byType[c.type]=(byType[c.type]||0)+1;}); return { totalContacts:memoryState.contacts.length, totalInteractions:memoryState.interactions.length, byType }; },
     addReminder: (r: any) => { const rem: Reminder={id:'r_'+Date.now(), contactId:r.contactId, message:r.message, dueDate:r.dueDate||new Date().toISOString(), done:false, createdAt:new Date().toISOString()}; memoryState.reminders=[rem,...memoryState.reminders]; safeSave(memoryState); notify(); return rem; },
+    updateReminder: (id: string, u: any) => { memoryState.reminders=memoryState.reminders.map((rr: any)=>rr.id===id?{...rr, ...u}:rr); safeSave(memoryState); notify(); },
     toggleReminder: (id: string) => { memoryState.reminders=memoryState.reminders.map(rr=>rr.id===id?{...rr,done:!rr.done}:rr); safeSave(memoryState); notify(); },
     deleteReminder: (id: string) => { memoryState.reminders=memoryState.reminders.filter(rr=>rr.id!==id); safeSave(memoryState); notify(); },
+    snoozeReminder: (id: string, days: number) => { memoryState.reminders=memoryState.reminders.map((rr: any)=>rr.id===id?{...rr, dueDate: new Date(Date.now()+86400000*days).toISOString()}:rr); safeSave(memoryState); notify(); },
+    getReminderGroups: () => {
+      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+      const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(tomorrowStart.getDate()+1);
+      const overdue: any[]=[]; const today: any[]=[]; const upcoming: any[]=[]; const done: any[]=[];
+      for (const r of memoryState.reminders as any[]) {
+        if (r.done) { done.push(r); continue; }
+        const d = new Date(r.dueDate).getTime();
+        if (d < todayStart.getTime()) overdue.push(r);
+        else if (d < tomorrowStart.getTime()) today.push(r);
+        else upcoming.push(r);
+      }
+      const sf = (a:any,b:any)=> new Date(a.dueDate).getTime()-new Date(b.dueDate).getTime();
+      return { overdue: overdue.sort(sf), today: today.sort(sf), upcoming: upcoming.sort(sf), done: done.sort(sf) };
+    },
     bulkImportContacts: (incoming: any[]) => {
       const norm = (n: string) => n.trim().toLowerCase().replace(/\s+/g,' ');
       const existingNorm = new Set<string>(memoryState.contacts.map((c:any)=>norm(c.name)));

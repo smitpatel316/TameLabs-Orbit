@@ -68,8 +68,11 @@ interface OrbitState {
   getByType: (type: string) => Contact[];
   getStats: () => { totalContacts: number; totalInteractions: number; byType: Record<string, number> };
   addReminder: (r: Partial<Reminder> & { contactId: string; message: string }) => Reminder;
+  updateReminder: (id: string, updates: Partial<Reminder>) => void;
   toggleReminder: (id: string) => void;
   deleteReminder: (id: string) => void;
+  snoozeReminder: (id: string, days: number) => void;
+  getReminderGroups: () => { overdue: Reminder[]; today: Reminder[]; upcoming: Reminder[]; done: Reminder[] };
   bulkImportContacts: (contacts: { name: string; birthday?: string | null; notes?: string; tags?: string[] }[]) => { imported: number; skipped: number; importedContacts: Contact[] };
 }
 
@@ -223,6 +226,12 @@ export const useOrbitStore = create<OrbitState>()(
         return newRem;
       },
 
+      updateReminder: (id, updates) => {
+        set((s) => ({
+          reminders: s.reminders.map((r) => (r.id === id ? { ...r, ...updates } : r)),
+        }));
+      },
+
       toggleReminder: (id) => {
         set((s) => ({
           reminders: s.reminders.map((r) => (r.id === id ? { ...r, done: !r.done } : r)),
@@ -231,6 +240,36 @@ export const useOrbitStore = create<OrbitState>()(
 
       deleteReminder: (id) => {
         set((s) => ({ reminders: s.reminders.filter((r) => r.id !== id) }));
+      },
+
+      snoozeReminder: (id, days) => {
+        set((s) => ({
+          reminders: s.reminders.map((r) =>
+            r.id === id
+              ? { ...r, dueDate: new Date(Date.now() + 86400000 * days).toISOString() }
+              : r
+          ),
+        }));
+      },
+
+      getReminderGroups: () => {
+        const { reminders } = get();
+        const now = new Date();
+        const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
+        const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(tomorrowStart.getDate()+1);
+        const overdue: Reminder[] = [];
+        const today: Reminder[] = [];
+        const upcoming: Reminder[] = [];
+        const done: Reminder[] = [];
+        for (const r of reminders) {
+          if (r.done) { done.push(r); continue; }
+          const d = new Date(r.dueDate).getTime();
+          if (d < todayStart.getTime()) overdue.push(r);
+          else if (d < tomorrowStart.getTime()) today.push(r);
+          else upcoming.push(r);
+        }
+        const sortFn = (a: Reminder, b: Reminder) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        return { overdue: overdue.sort(sortFn), today: today.sort(sortFn), upcoming: upcoming.sort(sortFn), done: done.sort(sortFn) };
       },
 
       bulkImportContacts: (incoming) => {

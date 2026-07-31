@@ -28,7 +28,9 @@
     "react-native-svg": "15.12.1",
     "react-native-web": "^0.21.0",
     "zustand": "^4.5.5",
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.0",
+    "@tamelabs/theme": "file:./packages/theme",
+    "@tamelabs/ui": "file:./packages/ui"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",

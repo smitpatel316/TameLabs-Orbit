@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, TextInput, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useOrbitStore, ENERGY_LEVELS } from '../stores/orbitStore';
-import { theme, formatTimeAgo, formatDate, formatFullDate } from '../src/theme';
+import { theme, formatTimeAgo, formatDate, formatFullDate, MONTHS } from '../src/theme';
 import { EmptyState } from '../src/components/EmptyState';
 import { logger } from '../src/utils/logger';
 
@@ -60,8 +60,6 @@ export default function JourneyMappingScreen({ route, navigation }: any) {
     const bySent = { pos: interactions.filter((i:any)=>i.sentiment==='positive').length, neu: interactions.filter((i:any)=>i.sentiment==='neutral').length, neg: interactions.filter((i:any)=>i.sentiment==='negative').length };
     return { total: interactions.length, spanDays, avgGap, first, last, last3, bySent };
   }, [interactions]);
-
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'] as const;
   const grouped = useMemo(()=>{
     if (groupBy==='all') return [{ key: 'All time', items: filtered }];
     const map = new Map<string, any[]>();

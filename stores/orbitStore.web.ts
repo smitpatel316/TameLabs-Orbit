@@ -1,4 +1,6 @@
 import React from 'react';
+import { GROUP_COLORS } from '../src/theme';
+export { GROUP_COLORS };
 
 export const RELATIONSHIP_TYPES: Record<string, { emoji: string; color: string; label: string }> = {
   family: { emoji: 'FAM', color: '#E53E3E', label: 'Family' },
@@ -14,8 +16,6 @@ export const ENERGY_LEVELS: Record<string, { value: number; label: string; color
   good: { value: 1, label: 'Good', color: '#38A169' },
   nourishing: { value: 2, label: 'Nourishing', color: '#3182CE' },
 };
-
-export const GROUP_COLORS = ['#111827', '#E53E3E', '#3182CE', '#D69E2E', '#10B981', '#D53F8C', '#805AD5', '#ED8936'];
 
 export type Contact = { id: string; name: string; type: keyof typeof RELATIONSHIP_TYPES; energy: keyof typeof ENERGY_LEVELS; healthScore: number; createdAt: string; lastInteraction: string | null; birthday: string | null; notes?: string; tags?: string[]; groupId?: string; };
 export type Interaction = { id: string; contactId: string; date: string; type: string; summary: string; topics?: string[]; sentiment?: string; energy?: string; createdAt: string; };

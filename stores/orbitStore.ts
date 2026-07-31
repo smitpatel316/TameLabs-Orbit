@@ -1,5 +1,7 @@
 // Orbit Store - Relationship management with Groups full support v2.6
 import { create } from 'zustand';
+import { GROUP_COLORS } from '../src/theme';
+export { GROUP_COLORS };
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -18,8 +20,6 @@ export const ENERGY_LEVELS: Record<string, { value: number; label: string; color
   good: { value: 1, label: 'Good', color: '#38A169' },
   nourishing: { value: 2, label: 'Nourishing', color: '#3182CE' },
 };
-
-export const GROUP_COLORS = ['#111827', '#E53E3E', '#3182CE', '#D69E2E', '#10B981', '#D53F8C', '#805AD5', '#ED8936'];
 
 export type Contact = {
   id: string;

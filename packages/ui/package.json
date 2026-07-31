@@ -1,0 +1,15 @@
+{
+  "name": "@tamelabs/ui",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "description": "TameLabs shared UI components - Button/Input/EmptyState/Loading - imports @tamelabs/theme",
+  "dependencies": {
+    "@tamelabs/theme": "file:../theme"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "react-native-svg": "*"
+  }
+}

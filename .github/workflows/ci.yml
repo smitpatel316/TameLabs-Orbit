@@ -1,0 +1,75 @@
+name: CI
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install deps
+        run: npm install --no-audit --no-fund --ignore-scripts --silent
+      - name: TypeScript check
+        run: ./node_modules/.bin/tsc --noEmit --skipLibCheck -p .
+      - name: Token hardening — no raw hex in screens
+        run: |
+          set -e
+          SCREENS="screens"
+          echo "Checking $SCREENS for raw hex tokens..."
+          # Allow '#FFFFFF' / '#FFF' only when used as onPrimary semantic (chip active)
+          # For strict CI, we count raw hex that is NOT pure white in uppercase - but we grep all and assert 0 for non-white
+          # We allow '#FFF' and '#FFFFFF' but nothing else - if you have legitimate onPrimary, keep it; else 0 is ideal
+          # This check fails if any raw hex like '#000' '#111' '#EEE' etc found in screens
+          RAW=$(grep -rn "'#[0-9A-Fa-f]\{3,8\}'" $SCREENS 2>/dev/null | grep -v "'#FFF'" | grep -v "'#FFFFFF'" | grep -v "'#fff'" | grep -v "'#ffffff'" || true)
+          if [ -n "$RAW" ]; then
+            echo "FOUND raw hex in screens (should use theme tokens):"
+            echo "$RAW"
+            echo "Fix: replace with theme.colors.* tokens. See src/theme.ts"
+            exit 1
+          fi
+          echo "Raw hex check OK (no non-white raw hex in screens)"
+      - name: Anti-pattern — no toLocaleDateString in screens
+        run: |
+          set -e
+          SCREENS="screens"
+          echo "Checking $SCREENS for toLocaleDateString/toLocaleString anti-pattern..."
+          FOUND=$(grep -rn "toLocaleDateString\|toLocaleString" $SCREENS 2>/dev/null | grep -v ".web.tsx:" | grep -v "// allowed" | grep "toLocale" || true)
+          # We check src/screens for Hubble/Quiet and screens/ for Orbit
+          # Allow toLocaleDateString only in theme helpers and services/widget.ts dayLabel slice, not in screens
+          if [ -n "$FOUND" ]; then
+            # Filter out lines that are just in comments or allowed patterns - for now fail if any toLocaleDateString in screens
+            # Screens should use formatDate/formatFullDate from theme
+            # Exclude if file path contains theme or widget, but we are already only checking screens/
+            if echo "$FOUND" | grep -q "toLocaleDateString\|toLocaleString"; then
+              echo "FOUND toLocaleDateString/toLocaleString in screens (locale-breaks month grouping):"
+              echo "$FOUND"
+              echo "Fix: use formatDate/formatFullDate from theme + ISO yyyy-MM + MONTHS array for grouping"
+              exit 1
+            fi
+          fi
+          echo "toLocaleDateString check OK"
+      - name: Lean check — no node_modules in git
+        run: |
+          set -e
+          if git ls-files | grep -q node_modules; then
+            echo "ERROR: node_modules tracked in git! Run git rm -r --cached node_modules package-lock.json && add to .gitignore"
+            git ls-files | grep node_modules | head -20
+            exit 1
+          fi
+          echo "Lean check OK"
+      - name: Version alignment — app.json matches package.json
+        run: |
+          set -e
+          APP_VER=$(cat app.json | python3 -c "import sys,json; print(json.load(sys.stdin)['expo']['version'])")
+          PKG_VER=$(cat package.json | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])")
+          if [ "$APP_VER" != "$PKG_VER" ]; then
+            echo "Version drift: app.json $APP_VER != package.json $PKG_VER"
+            exit 1
+          fi
+          echo "Version alignment OK: $APP_VER"

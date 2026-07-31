@@ -61,17 +61,23 @@ export default function JourneyMappingScreen({ route, navigation }: any) {
     return { total: interactions.length, spanDays, avgGap, first, last, last3, bySent };
   }, [interactions]);
 
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'] as const;
   const grouped = useMemo(()=>{
     if (groupBy==='all') return [{ key: 'All time', items: filtered }];
     const map = new Map<string, any[]>();
     for (const it of filtered) {
       const d = new Date(it.createdAt);
-      const key = d.toLocaleDateString(undefined,{ month:'long', year:'numeric' });
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(it);
+      const isoMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const label = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+      const compositeKey = `${isoMonth}|${label}`;
+      if (!map.has(compositeKey)) map.set(compositeKey, []);
+      map.get(compositeKey)!.push(it);
     }
-    const entries = Array.from(map.entries()).sort((a,b)=> new Date(b[1][0].createdAt).getTime() - new Date(a[1][0].createdAt).getTime());
-    return entries.map(([key, items])=>({ key, items: items.sort((a:any,b:any)=>a.createdAt.localeCompare(b.createdAt)) }));
+    const entries = Array.from(map.entries()).sort((a,b)=> b[0].localeCompare(a[0]));
+    return entries.map(([ck, items])=>{
+      const [, label] = ck.split('|');
+      return { key: label, items: items.sort((a:any,b:any)=>a.createdAt.localeCompare(b.createdAt)) };
+    });
   }, [filtered, groupBy]);
 
   const activeCount = (sentFilter!=='all' ? 1:0) + (energyFilter!=='all' ? 1:0) + (typeFilter!=='all' ? 1:0) + (query.trim()?1:0);

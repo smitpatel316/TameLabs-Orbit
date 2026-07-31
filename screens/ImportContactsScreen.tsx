@@ -331,8 +331,8 @@ const styles = StyleSheet.create({
   statValueActive: { ...theme.typography.caption, color: '#FFF', fontWeight: '700' as any },
   linkBtn: { marginLeft: 'auto', paddingVertical: 4 },
   linkText: { ...theme.typography.caption, color: theme.colors.textSecondary, textDecorationLine: 'underline' as any },
-  webBanner: { backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A', borderRadius: theme.borderRadius.m, padding: theme.spacing.s },
-  webBannerText: { ...theme.typography.caption, color: '#92400E', lineHeight: 16 },
+  webBanner: { backgroundColor: theme.colors.warningBg, borderWidth: 1, borderColor: theme.colors.warningBorder, borderRadius: theme.borderRadius.m, padding: theme.spacing.s },
+  webBannerText: { ...theme.typography.caption, color: theme.colors.warningText, lineHeight: 16 },
 
   permContainer: { flexGrow: 1, padding: theme.spacing.l, justifyContent: 'center' },
   permCard: {

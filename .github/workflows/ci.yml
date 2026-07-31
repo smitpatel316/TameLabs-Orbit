@@ -17,16 +17,38 @@ jobs:
         run: npm install --no-audit --no-fund --ignore-scripts --silent
       - name: TypeScript check
         run: ./node_modules/.bin/tsc --noEmit --skipLibCheck -p .
+      - name: Expo web export check (catch blank-page regressions)
+        run: |
+          set -e
+          echo "Running expo export to catch Metro static blank-page bugs..."
+          ./node_modules/.bin/expo export --platform web --output-dir dist
+          if [ ! -f "dist/index.html" ]; then
+            echo "ERROR: dist/index.html missing after expo export"
+            exit 1
+          fi
+          SZ=$(wc -c < dist/index.html)
+          if [ "$SZ" -lt 500 ]; then
+            echo "ERROR: dist/index.html too small ($SZ bytes) - likely blank page"
+            exit 1
+          fi
+          echo "Expo export OK - dist/index.html $SZ bytes"
+          ls -lh dist/ | head -20
+          # bundle marker check
+          BUNDLE=$(ls -S dist/_expo/static/js/web/ 2>/dev/null | head -1 || echo "none")
+          echo "Largest bundle: $BUNDLE"
+          if [ "$BUNDLE" = "none" ]; then
+            echo "WARN: no bundle found in dist/_expo/static/js/web/ (Expo 54 layout may differ, checking dist/bundles)"
+            ls -R dist | head -30
+          fi
+          # If zustand createJSONStorage window undefined or SafeAreaView web breaks static render,
+          # export fails or produces blank root. This gate catches it early.
+          # Fix pattern: *.web.ts store without zustand useState+listeners, screens/*.web.tsx View not SafeAreaView
       - name: Token hardening — no raw hex in screens
         run: |
           set -e
           SCREENS="screens"
           echo "Checking $SCREENS for raw hex tokens..."
-          # Allow '#FFFFFF' / '#FFF' only when used as onPrimary semantic (chip active)
-          # For strict CI, we count raw hex that is NOT pure white in uppercase - but we grep all and assert 0 for non-white
-          # We allow '#FFF' and '#FFFFFF' but nothing else - if you have legitimate onPrimary, keep it; else 0 is ideal
-          # This check fails if any raw hex like '#000' '#111' '#EEE' etc found in screens
-          RAW=$(grep -rn "'#[0-9A-Fa-f]\{3,8\}'" $SCREENS 2>/dev/null | grep -v "'#FFF'" | grep -v "'#FFFFFF'" | grep -v "'#fff'" | grep -v "'#ffffff'" || true)
+          RAW=$(grep -rn "'#[0-9A-Fa-f]\{{3,8\}}'" $SCREENS 2>/dev/null | grep -v "'#FFF'" | grep -v "'#FFFFFF'" | grep -v "'#fff'" | grep -v "'#ffffff'" || true)
           if [ -n "$RAW" ]; then
             echo "FOUND raw hex in screens (should use theme tokens):"
             echo "$RAW"
@@ -40,12 +62,7 @@ jobs:
           SCREENS="screens"
           echo "Checking $SCREENS for toLocaleDateString/toLocaleString anti-pattern..."
           FOUND=$(grep -rn "toLocaleDateString\|toLocaleString" $SCREENS 2>/dev/null | grep -v ".web.tsx:" | grep -v "// allowed" | grep "toLocale" || true)
-          # We check src/screens for Hubble/Quiet and screens/ for Orbit
-          # Allow toLocaleDateString only in theme helpers and services/widget.ts dayLabel slice, not in screens
           if [ -n "$FOUND" ]; then
-            # Filter out lines that are just in comments or allowed patterns - for now fail if any toLocaleDateString in screens
-            # Screens should use formatDate/formatFullDate from theme
-            # Exclude if file path contains theme or widget, but we are already only checking screens/
             if echo "$FOUND" | grep -q "toLocaleDateString\|toLocaleString"; then
               echo "FOUND toLocaleDateString/toLocaleString in screens (locale-breaks month grouping):"
               echo "$FOUND"
@@ -54,11 +71,22 @@ jobs:
             fi
           fi
           echo "toLocaleDateString check OK"
+      - name: No ' -> ' arrow in Text (TS1382 guard)
+        run: |
+          set -e
+          SCREENS="screens"
+          echo "Checking $SCREENS for ' -> ' literal in TSX (TS1382)..."
+          FOUND=$(grep -rn " -> " $SCREENS/*.tsx 2>/dev/null | grep -v ".web.tsx" | grep "<Text" -A2 -B2 || grep -rn " -> " $SCREENS/*.tsx 2>/dev/null | head -5 || true)
+          # Softer check - just warn if pattern exists, don't fail hard yet
+          # Real check is tsc which catches TS1382 Unexpected token
+          echo "Arrow check: tsc covers TS1382, heuristic found:"
+          grep -rn " -> " $SCREENS/*.tsx 2>/dev/null | grep -v node_modules | head -10 || echo "none"
+          echo "Arrow heuristic OK"
       - name: Lean check — no node_modules in git
         run: |
           set -e
           if git ls-files | grep -q node_modules; then
-            echo "ERROR: node_modules tracked in git! Run git rm -r --cached node_modules package-lock.json && add to .gitignore"
+            echo "ERROR: node_modules tracked in git!"
             git ls-files | grep node_modules | head -20
             exit 1
           fi

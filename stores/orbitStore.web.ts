@@ -17,7 +17,7 @@ export const ENERGY_LEVELS: Record<string, { value: number; label: string; color
   nourishing: { value: 2, label: 'Nourishing', color: '#3182CE' },
 };
 
-export type Contact = { id: string; name: string; type: keyof typeof RELATIONSHIP_TYPES; energy: keyof typeof ENERGY_LEVELS; healthScore: number; createdAt: string; lastInteraction: string | null; birthday: string | null; notes?: string; tags?: string[]; groupId?: string; };
+export type Contact = { id: string; name: string; type: keyof typeof RELATIONSHIP_TYPES; energy: keyof typeof ENERGY_LEVELS; healthScore: number; createdAt: string; lastInteraction: string | null; birthday: string | null; notes?: string; tags?: string[]; groupId?: string; linkedUserId?: string | null; linkedPublicKey?: string | null; linkedDisplayName?: string | null; verified?: boolean; };
 export type Interaction = { id: string; contactId: string; date: string; type: string; summary: string; topics?: string[]; sentiment?: string; energy?: string; createdAt: string; };
 export type Group = { id: string; name: string; color?: string; createdAt?: string; };
 export type Reminder = { id: string; contactId: string; message: string; dueDate: string; done: boolean; createdAt: string };
@@ -47,6 +47,9 @@ type OrbitState = {
   addContact: (c: any) => Contact;
   updateContact: (id: string, u: any) => void;
   deleteContact: (id: string) => void;
+  linkContactToProfile: (contactId: string, profile: { id: string; displayName?: string; publicKey?: string | null; fingerprint?: string | null }) => Contact | null;
+  unlinkContactProfile: (contactId: string) => void;
+  getLinkedContactsCount: () => number;
   addTag: (t: string) => void; removeTag: (t: string) => void;
   addGroup: (n: string, color?: string) => Group; updateGroup: (id: string, u: any) => Group | null; deleteGroup: (id: string) => void;
   addInteraction: (i: any) => Interaction;
@@ -117,6 +120,38 @@ export const useOrbitStore = (selector?: any) => {
     },
     updateContact: (id: string, u: any) => { memoryState.contacts = memoryState.contacts.map(x=>x.id===id?{...x,...u}:x); safeSave(memoryState); notify(); },
     deleteContact: (id: string) => { memoryState.contacts = memoryState.contacts.filter(x=>x.id!==id); memoryState.interactions = memoryState.interactions.filter(x=>x.contactId!==id); memoryState.reminders = memoryState.reminders.filter(x=>x.contactId!==id); safeSave(memoryState); notify(); },
+    linkContactToProfile: (contactId: string, profile: { id: string; displayName?: string; publicKey?: string | null; fingerprint?: string | null }) => {
+      let updated: Contact | null = null;
+      memoryState.contacts = memoryState.contacts.map((c: any) => {
+        if (c.id !== contactId) return c;
+        updated = {
+          ...c,
+          linkedUserId: profile.id,
+          linkedDisplayName: profile.displayName || c.name,
+          linkedPublicKey: profile.publicKey || null,
+          verified: !!profile.publicKey,
+        };
+        return updated;
+      });
+      safeSave(memoryState); notify();
+      return updated;
+    },
+    unlinkContactProfile: (contactId: string) => {
+      memoryState.contacts = memoryState.contacts.map((c: any) => {
+        if (c.id !== contactId) return c;
+        return {
+          ...c,
+          linkedUserId: null,
+          linkedPublicKey: null,
+          linkedDisplayName: null,
+          verified: false,
+        };
+      });
+      safeSave(memoryState); notify();
+    },
+    getLinkedContactsCount: () => {
+      return (memoryState.contacts as any[]).filter((c: any) => Boolean(c.linkedUserId)).length;
+    },
     addTag: (t: string) => { if (!memoryState.tags.includes(t)) { memoryState.tags = [...memoryState.tags, t]; safeSave(memoryState); notify(); } },
     removeTag: (t: string) => { memoryState.tags = memoryState.tags.filter(x=>x!==t); safeSave(memoryState); notify(); },
     addGroup: (n: string, color?: string) => {

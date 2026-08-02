@@ -33,6 +33,10 @@ export type Contact = {
   notes?: string;
   tags?: string[];
   groupId?: string;
+  linkedUserId?: string | null;
+  linkedPublicKey?: string | null;
+  linkedDisplayName?: string | null;
+  verified?: boolean;
 };
 
 export type Interaction = {
@@ -59,6 +63,9 @@ interface OrbitState {
   addContact: (c: Partial<Contact> & { name: string }) => Contact;
   updateContact: (id: string, updates: Partial<Contact>) => void;
   deleteContact: (id: string) => void;
+  linkContactToProfile: (contactId: string, profile: { id: string; displayName?: string; publicKey?: string | null; fingerprint?: string | null }) => Contact | null;
+  unlinkContactProfile: (contactId: string) => void;
+  getLinkedContactsCount: () => number;
   addTag: (tag: string) => void;
   removeTag: (tag: string) => void;
   addGroup: (name: string, color?: string) => Group;
@@ -125,6 +132,44 @@ export const useOrbitStore = create<OrbitState>()(
           interactions: state.interactions.filter((i) => i.contactId !== id),
           reminders: state.reminders.filter((r) => r.contactId !== id),
         }));
+      },
+
+      linkContactToProfile: (contactId, profile) => {
+        let updated: Contact | null = null;
+        set((state) => ({
+          contacts: state.contacts.map((c) => {
+            if (c.id !== contactId) return c;
+            updated = {
+              ...c,
+              linkedUserId: profile.id,
+              linkedDisplayName: profile.displayName || c.name,
+              linkedPublicKey: profile.publicKey || null,
+              verified: !!profile.publicKey,
+            };
+            return updated;
+          }),
+        }));
+        return updated;
+      },
+
+      unlinkContactProfile: (contactId) => {
+        set((state) => ({
+          contacts: state.contacts.map((c) => {
+            if (c.id !== contactId) return c;
+            return {
+              ...c,
+              linkedUserId: null,
+              linkedPublicKey: null,
+              linkedDisplayName: null,
+              verified: false,
+            };
+          }),
+        }));
+      },
+
+      getLinkedContactsCount: () => {
+        const { contacts } = get();
+        return contacts.filter((c) => Boolean(c.linkedUserId)).length;
       },
 
       addTag: (tag) => {

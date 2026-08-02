@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, Share, ScrollView as RNScroll } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, Share, ScrollView as RNScroll, TextInput } from 'react-native';
 import { useOrbitStore, RELATIONSHIP_TYPES, ENERGY_LEVELS } from '../stores/orbitStore';
 import { theme, formatTimeAgo, formatDate, getHealthColor, formatFullDate } from '../src/theme';
 import { Button } from '../src/components/Button';
+import { Input } from '../src/components/Input';
 import { EmptyState } from '../src/components/EmptyState';
 import { logger } from '../src/utils/logger';
 
@@ -18,12 +19,68 @@ export default function ContactDetailScreen({ route, navigation }: any) {
   const contactInteractions = interactions.filter(i=>i.contactId===id).sort((a:any,b:any)=>b.createdAt.localeCompare(a.createdAt));
   const [refreshing, setRefreshing] = useState(false);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
+  const linkContactToProfile = useOrbitStore((s:any) => (s as any).linkContactToProfile);
+  const unlinkContactProfile = useOrbitStore((s:any) => (s as any).unlinkContactProfile);
+  const [tameSearch, setTameSearch] = useState((contact as any)?.linkedDisplayName || contact?.name || '');
+  const [tameResults, setTameResults] = useState<any[]>([]);
+  const [tameSearching, setTameSearching] = useState(false);
+  const [showTameLink, setShowTameLink] = useState(!!(contact as any)?.linkedUserId);
 
   const onRefresh = useCallback(()=>{
     setRefreshing(true);
     logger.info('ContactDetail','pull to refresh', { id });
     setTimeout(()=> setRefreshing(false), 600);
   }, [id]);
+
+  const handleSearchTame = useCallback(async ()=>{
+    const q = tameSearch.trim();
+    if (!q) { Alert.alert('Enter name', 'Type a display name to search Tame Cloud'); return; }
+    setTameSearching(true);
+    try {
+      const mod = await import('../src/cloud/identity/sync/profileSync').then((m:any)=>m).catch(()=>null);
+      if (!mod?.searchProfilesByName) {
+        Alert.alert('Tame Cloud not configured', 'Linking requires Supabase. Local mode shows mock only. Set EXPO_PUBLIC_SUPABASE_URL to enable.');
+        setTameSearching(false);
+        return;
+      }
+      const results = await mod.searchProfilesByName(q).catch(()=>[]);
+      setTameResults(results || []);
+      logger.info('ContactDetail','tame search', { q, count: results?.length });
+      if (!results?.length) Alert.alert('No profiles', `No Tame profiles matching "${q}"`);
+    } catch (e:any) {
+      Alert.alert('Search failed', e?.message || String(e));
+    }
+    setTameSearching(false);
+  }, [tameSearch]);
+
+  const handleLinkProfile = useCallback(async (profile: { id: string; display_name: string; public_key: string | null })=>{
+    const fp = profile.public_key ? String(profile.public_key).slice(0,8).toLowerCase() : null;
+    try {
+      const linked = linkContactToProfile(id, { id: profile.id, displayName: profile.display_name, publicKey: profile.public_key, fingerprint: fp });
+      if (linked) {
+        Alert.alert('Linked', `${contact?.name} linked to Tame ID ${profile.display_name}${fp ? ` fp ${fp}` : ''}`);
+        logger.info('ContactDetail','linked to Tame', { id, profileId: profile.id });
+        setTameResults([]);
+        setShowTameLink(true);
+      }
+    } catch (e:any) {
+      Alert.alert('Link failed', e?.message || String(e));
+    }
+  }, [id, contact?.name, linkContactToProfile]);
+
+  const handleUnlinkTame = useCallback(()=>{
+    Alert.alert('Unlink Tame ID?', `Remove link between ${contact?.name} and Tame ID ${(contact as any)?.linkedDisplayName || (contact as any)?.linkedUserId?.slice(0,8) || ''}?`, [
+      { text: 'Cancel', style: 'cancel' as any },
+      { text: 'Unlink', style: 'destructive' as any, onPress: ()=>{
+        try {
+          unlinkContactProfile(id);
+          logger.info('ContactDetail','unlinked Tame', { id });
+          setShowTameLink(false);
+          setTameResults([]);
+        } catch {}
+      }},
+    ]);
+  }, [id, contact?.name, unlinkContactProfile]);
 
   if (!contact) {
     return (
@@ -100,7 +157,7 @@ export default function ContactDetailScreen({ route, navigation }: any) {
                 </TouchableOpacity>
                 {groups.map((g:any)=>
                   <TouchableOpacity key={g.id} style={[styles.groupPickChip, { borderColor: g.color || theme.colors.border }, contact.groupId===g.id && { backgroundColor: g.color || theme.colors.primary, borderColor: g.color || theme.colors.primary }]} onPress={()=>handleChangeGroup(g.id)} activeOpacity={0.7} accessibilityLabel={`Assign to ${g.name}`}>
-                    <View style={[styles.groupDotSmall, { backgroundColor: contact.groupId===g.id ? '#FFF' : g.color || theme.colors.primary }]} />
+                    <View style={[styles.groupDotSmall, { backgroundColor: contact.groupId===g.id ? theme.colors.onPrimary : g.color || theme.colors.primary }]} />
                     <Text style={[styles.groupPickText, contact.groupId===g.id && styles.groupPickTextActive]} numberOfLines={1}>{g.name}</Text>
                   </TouchableOpacity>
                 )}
@@ -128,6 +185,51 @@ export default function ContactDetailScreen({ route, navigation }: any) {
             <Text style={styles.statValue}>{contact.lastInteraction ? formatTimeAgo(contact.lastInteraction) : 'never'}</Text>
             <Text style={styles.statLabel}>Last contact</Text>
           </View>
+        </View>
+
+        <View style={styles.tameSection}>
+          <View style={styles.tameHeader}>
+            <Text style={styles.tameTitle}>Tame ID Linking — v2.6.3</Text>
+            <TouchableOpacity onPress={()=>setShowTameLink(!showTameLink)} accessibilityLabel="Toggle Tame linking"><Text style={styles.tameToggle}>{showTameLink ? 'Hide' : 'Link'}</Text></TouchableOpacity>
+          </View>
+          {showTameLink ? (
+            (contact as any)?.linkedUserId ? (
+              <View style={styles.tameLinkedBox}>
+                <View style={styles.tameLinkedRow}>
+                  <View style={styles.verifiedBadge}><Text style={styles.verifiedBadgeText}>{(contact as any).verified ? 'Verified' : 'Linked'}</Text></View>
+                  <View style={styles.tameIdPill}><Text style={styles.tameIdPillText}>{(contact as any).linkedDisplayName || contact.name}</Text></View>
+                </View>
+                {(contact as any).linkedPublicKey ? <Text style={styles.tamePubKey} numberOfLines={1}>{String((contact as any).linkedPublicKey).slice(0,24)}...{String((contact as any).linkedPublicKey).slice(-6)} fp {String((contact as any).linkedPublicKey).slice(0,8).toLowerCase()}</Text> : null}
+                <Text style={styles.tameIdHint} numberOfLines={1}>Tame ID {String((contact as any).linkedUserId).slice(0,8)}...{String((contact as any).linkedUserId).slice(-4)} {(contact as any).linkedDisplayName ? `display ${ (contact as any).linkedDisplayName}` : ''}</Text>
+                <Text style={styles.tameDesc}>Cross-app identity bridge links Orbit contact to Tame ID used across Hubble (Brier badge), Orbit (health), Quiet (circles verified). Verified when public_key present via sealed-box.</Text>
+                <View style={styles.tameActionsRow}>
+                  <Button title="Unlink Tame" onPress={handleUnlinkTame} variant="ghost" size="s" />
+                </View>
+              </View>
+            ) : (
+              <View style={styles.tameSearchBox}>
+                <View style={styles.tameInputRow}>
+                  <TextInput style={styles.tameInput} placeholder="Search Tame display name..." placeholderTextColor={theme.colors.textTertiary} value={tameSearch} onChangeText={setTameSearch} returnKeyType="search" onSubmitEditing={handleSearchTame} accessibilityLabel="Tame display name search input" />
+                </View>
+                <Button title={tameSearching ? 'Searching...' : 'Search Tame Cloud'} onPress={handleSearchTame} variant="secondary" size="s" />
+                {tameResults.length>0 ? (
+                  <View style={styles.tameResultsBox}>
+                    {tameResults.map((p:any)=>(
+                      <TouchableOpacity key={p.id} style={styles.tameResultRow} onPress={()=>handleLinkProfile(p)} activeOpacity={0.7} accessibilityLabel={`Link to ${p.display_name}`}>
+                        <View style={styles.tameResultAvatar}><Text style={styles.tameResultAvatarText}>{(p.display_name?.[0]||'?').toUpperCase()}</Text></View>
+                        <View style={styles.tameResultInfo}>
+                          <Text style={styles.tameResultName}>{p.display_name}</Text>
+                          <Text style={styles.tameResultMeta} numberOfLines={1}>{p.public_key ? `fp ${String(p.public_key).slice(0,8).toLowerCase()} verified sealed-box ready` : 'no public key linked unverified'} • id {String(p.id).slice(0,8)}</Text>
+                        </View>
+                        <View style={styles.tameLinkBadge}><Text style={styles.tameLinkBadgeText}>Link</Text></View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+                <Text style={styles.tameHint}>Tame ID links across apps same id from email hash. When contact has public_key in profiles table, verified badge shows in Quiet circles plus Orbit detail. Requires Supabase EXPO_PUBLIC_SUPABASE_URL, else mock mode local.</Text>
+              </View>
+            )
+          ) : <Text style={styles.tameCollapsedHint}>Link this contact to a Tame profile for verified avatars across apps. Tap Link to search.</Text>}
         </View>
 
         {contact.notes ? (
@@ -188,13 +290,13 @@ const styles = StyleSheet.create({
   content: { padding: theme.spacing.l, gap: theme.spacing.ml, paddingBottom: 96 },
   header: { alignItems: 'center', paddingVertical: theme.spacing.l, gap: 6, backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.l, borderWidth: 1, borderColor: theme.colors.border, ...theme.shadows.card },
   avatar: { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', ...theme.shadows.sm },
-  avatarText: { color: '#FFF', fontSize: 28, fontWeight: '800' as any },
+  avatarText: { color: theme.colors.onPrimary, fontSize: 28, fontWeight: '800' as any },
   name: { ...theme.typography.h1, color: theme.colors.text, textAlign: 'center', marginTop: theme.spacing.s },
   metaRow: { flexDirection: 'row', gap: theme.spacing.s, marginTop: 4, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' },
   typeBadge: { backgroundColor: theme.colors.surfaceMuted, paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.border },
   typeBadgeText: { ...theme.typography.caption, color: theme.colors.textSecondary },
   healthBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadius.pill },
-  healthBadgeText: { color: '#FFF', fontSize: 11, fontWeight: '700' as any },
+  healthBadgeText: { color: theme.colors.onPrimary, fontSize: 11, fontWeight: '700' as any },
   groupBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.colors.surfaceMuted, paddingHorizontal: 8, paddingVertical: 4, borderRadius: theme.borderRadius.pill, borderWidth: 1 },
   groupBadgeText: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: '600' as any },
   groupDotSmall: { width: 8, height: 8, borderRadius: 4 },
@@ -211,7 +313,7 @@ const styles = StyleSheet.create({
   groupPickChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, paddingHorizontal: 10, paddingVertical: 6, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.border, gap: 6, ...theme.shadows.chip },
   groupPickChipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   groupPickText: { ...theme.typography.caption, color: theme.colors.textSecondary, maxWidth: 100 },
-  groupPickTextActive: { color: '#FFF', fontWeight: '600' as any },
+  groupPickTextActive: { color: theme.colors.onPrimary, fontWeight: '600' as any },
   groupPickerHint: { ...theme.typography.micro, color: theme.colors.textTertiary, fontStyle: 'italic' as any },
 
   statsRow: { flexDirection: 'row', gap: theme.spacing.s },
@@ -244,4 +346,32 @@ const styles = StyleSheet.create({
   interactionFullDate: { ...theme.typography.micro, color: theme.colors.textTertiary },
   actions: { gap: theme.spacing.s },
   actionsRow: { flexDirection: 'row', gap: theme.spacing.s },
+  tameSection: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.l, padding: theme.spacing.ml, borderWidth: 1, borderColor: theme.colors.border, gap: theme.spacing.s, ...theme.shadows.card },
+  tameHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  tameTitle: { ...theme.typography.label, color: theme.colors.text },
+  tameToggle: { color: theme.colors.primary, fontSize: 12, fontWeight: '600' as any },
+  tameLinkedBox: { gap: theme.spacing.s, backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.borderRadius.m, padding: theme.spacing.m, borderWidth: 1, borderColor: theme.colors.borderLight },
+  tameLinkedRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.s, flexWrap: 'wrap' as any },
+  verifiedBadge: { backgroundColor: theme.colors.success, paddingHorizontal: 8, paddingVertical: 2, borderRadius: theme.borderRadius.pill },
+  verifiedBadgeText: { color: theme.colors.onPrimary, fontSize: 10, fontWeight: '700' as any },
+  tameIdPill: { backgroundColor: theme.colors.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: theme.borderRadius.pill },
+  tameIdPillText: { color: theme.colors.onPrimary, fontSize: 11, fontWeight: '600' as any },
+  tamePubKey: { ...theme.typography.micro, color: theme.colors.textSecondary, fontFamily: 'monospace' as any },
+  tameIdHint: { ...theme.typography.micro, color: theme.colors.textTertiary },
+  tameDesc: { ...theme.typography.caption, color: theme.colors.textSecondary, lineHeight: 16 },
+  tameActionsRow: { flexDirection: 'row', gap: theme.spacing.s, marginTop: theme.spacing.s },
+  tameSearchBox: { gap: theme.spacing.s },
+  tameInputRow: { flexDirection: 'row', alignItems: 'center' },
+  tameInput: { flex: 1, backgroundColor: theme.colors.surfaceMuted, color: theme.colors.text, padding: 12, borderRadius: theme.borderRadius.m, fontSize: 14, borderWidth: 1, borderColor: theme.colors.border },
+  tameResultsBox: { gap: theme.spacing.s, marginTop: theme.spacing.s },
+  tameResultRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.borderRadius.m, padding: theme.spacing.s, borderWidth: 1, borderColor: theme.colors.borderLight, gap: theme.spacing.s },
+  tameResultAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: theme.colors.primary, justifyContent: 'center', alignItems: 'center' },
+  tameResultAvatarText: { color: theme.colors.onPrimary, fontSize: 14, fontWeight: '700' as any },
+  tameResultInfo: { flex: 1, gap: 2 },
+  tameResultName: { ...theme.typography.bodySmall, color: theme.colors.text, fontWeight: '600' as any },
+  tameResultMeta: { ...theme.typography.micro, color: theme.colors.textTertiary },
+  tameLinkBadge: { backgroundColor: theme.colors.primary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadius.pill },
+  tameLinkBadgeText: { color: theme.colors.onPrimary, fontSize: 11, fontWeight: '600' as any },
+  tameHint: { ...theme.typography.micro, color: theme.colors.textTertiary, fontStyle: 'italic' as any, lineHeight: 14 },
+  tameCollapsedHint: { ...theme.typography.caption, color: theme.colors.textTertiary, fontStyle: 'italic' as any },
 });

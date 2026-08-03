@@ -109,7 +109,7 @@ export default function AddContactScreen({ navigation }: any) {
               </TouchableOpacity>
               {groups.map((g:any)=>
                 <TouchableOpacity key={g.id} style={[styles.groupChip, { borderColor: g.color || theme.colors.border }, selectedGroupId===g.id && { backgroundColor: g.color || theme.colors.primary, borderColor: g.color || theme.colors.primary }]} onPress={()=>setSelectedGroupId(selectedGroupId===g.id ? undefined : g.id)} activeOpacity={0.7} accessibilityRole="button" accessibilityState={{ selected: selectedGroupId===g.id }} accessibilityLabel={`Group ${g.name} ${groupCounts[g.id]||0}`}>
-                  <View style={[styles.groupDot, { backgroundColor: selectedGroupId===g.id ? '#FFF' : g.color || theme.colors.primary }]} />
+                  <View style={[styles.groupDot, { backgroundColor: selectedGroupId===g.id ? theme.colors.onPrimary : g.color || theme.colors.primary }]} />
                   <Text style={[styles.groupChipText, selectedGroupId===g.id && styles.groupChipTextActive]} numberOfLines={1}>{g.name}</Text>
                   <View style={[styles.countPill, selectedGroupId===g.id && styles.countPillActive]}><Text style={[styles.countText, selectedGroupId===g.id && styles.countTextActive]}>{groupCounts[g.id]||0}</Text></View>
                 </TouchableOpacity>
@@ -184,17 +184,17 @@ const styles = StyleSheet.create({
   typeBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, paddingHorizontal: theme.spacing.ml, paddingVertical: theme.spacing.s, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.border, gap: 6, ...theme.shadows.chip },
   typeEmoji: { fontSize: 14 },
   typeLabel: { ...theme.typography.caption, color: theme.colors.textSecondary },
-  typeLabelActive: { color: '#FFF', fontWeight: '700' as any },
+  typeLabelActive: { color: theme.colors.onPrimary, fontWeight: '700' as any },
   groupsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.s, alignItems: 'center' },
   groupChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, paddingHorizontal: 10, paddingVertical: 6, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.border, gap: 6, maxWidth: 170, ...theme.shadows.chip },
   groupChipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   groupChipText: { ...theme.typography.caption, color: theme.colors.textSecondary, flexShrink: 1 },
-  groupChipTextActive: { color: '#FFF', fontWeight: '600' as any },
+  groupChipTextActive: { color: theme.colors.onPrimary, fontWeight: '600' as any },
   groupDot: { width: 8, height: 8, borderRadius: 4 },
   countPill: { backgroundColor: theme.colors.surfaceHover, paddingHorizontal: 5, paddingVertical: 1, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.borderLight },
   countPillActive: { backgroundColor: 'rgba(255,255,255,0.22)', borderColor: 'transparent' },
   countText: { fontSize: 10, color: theme.colors.textTertiary, fontWeight: '600' as any },
-  countTextActive: { color: '#FFF' },
+  countTextActive: { color: theme.colors.onPrimary },
   createGroupLink: { paddingHorizontal: 10, paddingVertical: 6 },
   createGroupText: { color: theme.colors.text, fontSize: 12, fontWeight: '600' as any },
   inlineGroupCreator: { flexDirection: 'row', gap: theme.spacing.s, alignItems: 'flex-start', marginTop: theme.spacing.s },
@@ -202,12 +202,12 @@ const styles = StyleSheet.create({
   tag: { backgroundColor: theme.colors.surface, paddingHorizontal: theme.spacing.m, paddingVertical: 6, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.border, ...theme.shadows.chip },
   tagActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   tagText: { ...theme.typography.caption, color: theme.colors.textSecondary },
-  tagTextActive: { color: '#FFF', fontWeight: '600' as any },
+  tagTextActive: { color: theme.colors.onPrimary, fontWeight: '600' as any },
   selectedTagsPreview: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: theme.spacing.s, gap: 6 },
   selectedLabel: { ...theme.typography.caption, color: theme.colors.textTertiary },
   tagPreviewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   previewTag: { backgroundColor: theme.colors.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: theme.borderRadius.pill },
-  previewTagText: { color: '#FFF', fontSize: 10, fontWeight: '600' as any },
+  previewTagText: { color: theme.colors.onPrimary, fontSize: 10, fontWeight: '600' as any },
   hint: { ...theme.typography.micro, color: theme.colors.textTertiary, marginTop: 4, fontStyle: 'italic' as any },
   multiline: { minHeight: 80, textAlignVertical: 'top' as any },
   charRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4 },

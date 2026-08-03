@@ -2,6 +2,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { logger } from '../utils/logger';
+import { theme } from '../theme';
 
 interface Props { children: ReactNode }
 interface State { hasError: boolean; error: Error | null; errorId: string | null; }
@@ -47,12 +48,12 @@ export class ErrorBoundary extends Component<Props, State> {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#FFFFFF', gap: 12 },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: theme.colors.onPrimary, gap: 12 },
   title: { fontSize: 20, fontWeight: '800' },
-  sub: { fontSize: 13, color: '#666666', textAlign: 'center' },
-  errorId: { fontSize: 11, color: '#999999', fontFamily: 'monospace' as any },
-  message: { fontSize: 12, color: '#E53E3E', textAlign: 'center', marginTop: 8 },
-  btn: { backgroundColor: '#111111', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, marginTop: 12 },
-  btnText: { color: '#FFFFFF', fontWeight: '600' },
-  hint: { fontSize: 11, color: '#AAAAAA', marginTop: 8, textAlign: 'center' },
+  sub: { fontSize: 13, color: theme.colors.textSecondary, textAlign: 'center' },
+  errorId: { fontSize: 11, color: theme.colors.textTertiary, fontFamily: 'monospace' as any },
+  message: { fontSize: 12, color: theme.colors.dangerText, textAlign: 'center', marginTop: 8 },
+  btn: { backgroundColor: theme.colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, marginTop: 12 },
+  btnText: { color: theme.colors.onPrimary, fontWeight: '600' },
+  hint: { fontSize: 11, color: theme.colors.textMuted, marginTop: 8, textAlign: 'center' },
 });

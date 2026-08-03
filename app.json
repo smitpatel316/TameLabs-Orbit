@@ -2,7 +2,7 @@
   "expo": {
     "name": "Orbit",
     "slug": "orbit",
-    "version": "2.6.3",
+    "version": "2.6.4",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "ios": {

@@ -204,21 +204,21 @@ export default function MapScreen({ navigation }: any) {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
             <TouchableOpacity style={[styles.chip, quadrantFilter==='all' && styles.chipActive]} onPress={()=>setQuadrantFilter('all')} accessibilityRole="button" accessibilityState={{ selected: quadrantFilter==='all' }}><Text style={[styles.chipText, quadrantFilter==='all' && styles.chipTextActive]}>All</Text></TouchableOpacity>
             {(Object.keys(QUADRANTS) as Exclude<QuadrantKey,'all'>[]).map(k=> (
-              <TouchableOpacity key={k} style={[styles.chip, quadrantFilter===k && styles.chipActive, quadrantFilter===k && { backgroundColor: QUADRANTS[k].color }]} onPress={()=>setQuadrantFilter(k)} accessibilityRole="button" accessibilityState={{ selected: quadrantFilter===k }}><Text style={[styles.chipText, quadrantFilter===k && styles.chipTextActive, quadrantFilter===k && { color: '#FFF' }]}>{QUADRANTS[k].label}</Text></TouchableOpacity>
+              <TouchableOpacity key={k} style={[styles.chip, quadrantFilter===k && styles.chipActive, quadrantFilter===k && { backgroundColor: QUADRANTS[k].color }]} onPress={()=>setQuadrantFilter(k)} accessibilityRole="button" accessibilityState={{ selected: quadrantFilter===k }}><Text style={[styles.chipText, quadrantFilter===k && styles.chipTextActive, quadrantFilter===k && { color: theme.colors.onPrimary }]}>{QUADRANTS[k].label}</Text></TouchableOpacity>
             ))}
           </ScrollView>
           <Text style={[styles.filterLabel, { marginTop: 8 }]}>Energy</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
             <TouchableOpacity style={[styles.chip, energyFilter==='all' && styles.chipActive]} onPress={()=>setEnergyFilter('all')}><Text style={[styles.chipText, energyFilter==='all' && styles.chipTextActive]}>All</Text></TouchableOpacity>
             {Object.entries(ENERGY_LEVELS).map(([k,v]: any)=>(
-              <TouchableOpacity key={k} style={[styles.chip, energyFilter===k && { backgroundColor: v.color, borderColor: v.color }]} onPress={()=>setEnergyFilter(energyFilter===k?'all':k as any)} accessibilityRole="button" accessibilityState={{ selected: energyFilter===k }}><Text style={[styles.chipText, energyFilter===k && { color: '#FFF' }]}>{v.label}</Text></TouchableOpacity>
+              <TouchableOpacity key={k} style={[styles.chip, energyFilter===k && { backgroundColor: v.color, borderColor: v.color }]} onPress={()=>setEnergyFilter(energyFilter===k?'all':k as any)} accessibilityRole="button" accessibilityState={{ selected: energyFilter===k }}><Text style={[styles.chipText, energyFilter===k && { color: theme.colors.onPrimary }]}>{v.label}</Text></TouchableOpacity>
             ))}
           </ScrollView>
           <Text style={[styles.filterLabel, { marginTop: 8 }]}>Type</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
             <TouchableOpacity style={[styles.chip, typeFilter==='all' && styles.chipActive]} onPress={()=>setTypeFilter('all')}><Text style={[styles.chipText, typeFilter==='all' && styles.chipTextActive]}>All</Text></TouchableOpacity>
             {Object.entries(RELATIONSHIP_TYPES).map(([k,v]: any)=>(
-              <TouchableOpacity key={k} style={[styles.chip, typeFilter===k && { backgroundColor: v.color }]} onPress={()=>setTypeFilter(typeFilter===k?'all':k as any)}><Text style={[styles.chipText, typeFilter===k && { color: '#FFF' }]}>{v.emoji} {v.label}</Text></TouchableOpacity>
+              <TouchableOpacity key={k} style={[styles.chip, typeFilter===k && { backgroundColor: v.color }]} onPress={()=>setTypeFilter(typeFilter===k?'all':k as any)}><Text style={[styles.chipText, typeFilter===k && { color: theme.colors.onPrimary }]}>{v.emoji} {v.label}</Text></TouchableOpacity>
             ))}
           </ScrollView>
           {groups.length > 0 && (
@@ -232,9 +232,9 @@ export default function MapScreen({ navigation }: any) {
                   return (
                     <TouchableOpacity key={g.id} style={[styles.chip, { borderColor: active ? g.color : theme.colors.border }, active && { backgroundColor: g.color }]} onPress={()=>setGroupFilter(active ? 'all' : g.id)} accessibilityRole="button" accessibilityState={{ selected: active }} accessibilityLabel={`Filter group ${g.name}`}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                        <View style={[styles.groupDotSmall, { backgroundColor: active ? '#FFF' : g.color }]} />
-                        <Text style={[styles.chipText, active && { color: '#FFF' }]}>{g.name}</Text>
-                        <View style={[styles.countBadge, active && { backgroundColor: 'rgba(255,255,255,0.25)' }]}><Text style={[styles.countBadgeText, active && { color: '#FFF' }]}>{count}</Text></View>
+                        <View style={[styles.groupDotSmall, { backgroundColor: active ? theme.colors.onPrimary : g.color }]} />
+                        <Text style={[styles.chipText, active && { color: theme.colors.onPrimary }]}>{g.name}</Text>
+                        <View style={[styles.countBadge, active && { backgroundColor: 'rgba(255,255,255,0.25)' }]}><Text style={[styles.countBadgeText, active && { color: theme.colors.onPrimary }]}>{count}</Text></View>
                       </View>
                     </TouchableOpacity>
                   );
@@ -310,7 +310,7 @@ export default function MapScreen({ navigation }: any) {
                     <View style={[styles.groupDot, { backgroundColor: g.color }]} />
                     <Text style={styles.groupTitle}>{g.name} - {list.length}</Text>
                     <Text style={styles.groupAvg}>avg {avg}%</Text>
-                    <View style={[styles.groupActiveHint, isActive && { backgroundColor: g.color }]}><Text style={[styles.groupActiveHintText, isActive && { color: '#FFF' }]}>{isActive ? 'filtered' : 'tap to filter'}</Text></View>
+                    <View style={[styles.groupActiveHint, isActive && { backgroundColor: g.color }]}><Text style={[styles.groupActiveHintText, isActive && { color: theme.colors.onPrimary }]}>{isActive ? 'filtered' : 'tap to filter'}</Text></View>
                   </TouchableOpacity>
                   <View style={styles.bubbleRow}>
                     {list.slice(0,20).map((c:any)=>
@@ -475,13 +475,13 @@ const styles = StyleSheet.create({
   detailCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.l, padding: theme.spacing.ml, borderWidth: 1.5, borderColor: theme.colors.primary, ...theme.shadows.modal, gap: theme.spacing.s },
   detailHeader: { flexDirection: 'row', gap: theme.spacing.m, alignItems: 'center' },
   detailAvatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  detailAvatarText: { color: '#FFF', fontSize: 16, fontWeight: '800' as any },
+  detailAvatarText: { color: theme.colors.onPrimary, fontSize: 16, fontWeight: '800' as any },
   detailName: { ...theme.typography.h3, color: theme.colors.text },
   detailMeta: { ...theme.typography.micro, color: theme.colors.textSecondary, lineHeight: 13, marginTop: 2 },
   detailClose: { fontSize: 12, fontWeight: '700' as any, color: theme.colors.textTertiary, padding: 6 },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.s, flexWrap: 'wrap' as any },
   healthBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadius.pill },
-  healthBadgeText: { color: '#FFF', fontSize: 12, fontWeight: '700' as any },
+  healthBadgeText: { color: theme.colors.onPrimary, fontSize: 12, fontWeight: '700' as any },
   quadChip: { borderWidth: 1, borderRadius: theme.borderRadius.pill, paddingHorizontal: 10, paddingVertical: 4 },
   quadChipText: { fontSize: 11, fontWeight: '700' as any },
   detailDesc: { ...theme.typography.micro, color: theme.colors.textTertiary, fontStyle: 'italic' as any },
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   chip: { backgroundColor: theme.colors.surfaceMuted, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.borderRadius.pill, paddingHorizontal: 12, paddingVertical: 7 },
   chipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   chipText: { fontSize: 11, fontWeight: '600' as any, color: theme.colors.textSecondary },
-  chipTextActive: { color: '#FFF' },
+  chipTextActive: { color: theme.colors.onPrimary },
   countBadge: { backgroundColor: theme.colors.surfaceHover, borderRadius: theme.borderRadius.pill, paddingHorizontal: 5, paddingVertical: 1, minWidth: 18, alignItems: 'center' },
   countBadgeText: { fontSize: 10, fontWeight: '700' as any, color: theme.colors.textSecondary },
   activeFiltersRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, borderTopWidth: 1, borderTopColor: theme.colors.borderLight, paddingTop: 8 },
@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
   quadrantCount: { fontSize: 20, fontWeight: '800' as any, color: theme.colors.text, marginTop: 2 },
   quadrantBubbles: { flexDirection: 'row', flexWrap: 'wrap' as any, gap: 4, marginTop: 6, alignItems: 'center' },
   qMiniBubble: { width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
-  qMiniText: { color: '#FFF', fontSize: 9, fontWeight: '700' as any },
+  qMiniText: { color: theme.colors.onPrimary, fontSize: 9, fontWeight: '700' as any },
   qMore: { fontSize: 10, color: theme.colors.textTertiary, fontWeight: '600' as any },
   axisRow: { marginTop: theme.spacing.s, alignItems: 'center' },
   axisLabel: { fontSize: 9, color: theme.colors.textMuted, letterSpacing: 0.5 },
@@ -532,12 +532,12 @@ const styles = StyleSheet.create({
 
   cloudRow: { flexDirection: 'row', gap: theme.spacing.s, paddingVertical: 4 },
   bubble: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', ...theme.shadows.chip },
-  bubbleText: { color: '#FFF', fontWeight: '700' as any, fontSize: 14 },
+  bubbleText: { color: theme.colors.onPrimary, fontWeight: '700' as any, fontSize: 14 },
   bubbleHealthDot: { position: 'absolute', bottom: -2, right: -2, width: 10, height: 10, borderRadius: 5, borderWidth: 1.5, borderColor: theme.colors.surface },
   group: { marginTop: theme.spacing.m },
   bubbleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   miniBubble: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', ...theme.shadows.chip },
-  miniBubbleText: { color: '#FFF', fontWeight: '700' as any, fontSize: 12 },
+  miniBubbleText: { color: theme.colors.onPrimary, fontWeight: '700' as any, fontSize: 12 },
   moreText: { fontSize: 11, color: theme.colors.textTertiary, alignSelf: 'center', marginLeft: 4 },
 
   distList: { gap: theme.spacing.s, marginTop: theme.spacing.s },

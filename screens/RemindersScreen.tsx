@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   checkBox: { width: 24, height: 24, borderRadius: 6, borderWidth: 1.5, borderColor: theme.colors.borderStrong, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.surface },
   checkBoxDone: { backgroundColor: theme.colors.success, borderColor: theme.colors.success },
   checkBoxOverdue: { borderColor: theme.colors.danger, backgroundColor: theme.colors.danger+'14' },
-  checkMark: { color: '#FFF', fontSize: 12, fontWeight: '800' as any },
+  checkMark: { color: theme.colors.onPrimary, fontSize: 12, fontWeight: '800' as any },
   checkMarkOverdue: { color: theme.colors.danger, fontSize: 12, fontWeight: '800' as any },
   msg: { ...theme.typography.bodySmall, color: theme.colors.text, fontWeight: '500' as any },
   msgDone: { textDecorationLine: 'line-through', color: theme.colors.textTertiary },

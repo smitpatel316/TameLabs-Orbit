@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Alert, RefreshControl } from 'react-native';
 import { useOrbitStore } from '../stores/orbitStore';
 import { theme, formatTimeAgo, formatDate } from '../src/theme';
 import { Input } from '../src/components/Input';
@@ -166,8 +166,9 @@ export default function RemindersScreen() {
   const allActive = groups.overdue.length + groups.today.length + groups.upcoming.length;
 
   return (
-    <View style={styles.container}>
-      <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={{ flex: 1 }}>
           <View style={styles.inputSection}>
             <Text style={styles.addTitle}>New Reminder</Text>
             <Input placeholder="e.g. Check in, birthday text, call about project" value={text} onChangeText={setText} maxLength={maxReminder} returnKeyType="done" accessibilityLabel="Reminder message" />
@@ -230,7 +231,8 @@ export default function RemindersScreen() {
             <View style={{ height: 24 }} />
           </ScrollView>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
+    </View>
   );
 }
 
@@ -285,7 +287,7 @@ const styles = StyleSheet.create({
   checkBox: { width: 24, height: 24, borderRadius: 6, borderWidth: 1.5, borderColor: theme.colors.borderStrong, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.surface },
   checkBoxDone: { backgroundColor: theme.colors.success, borderColor: theme.colors.success },
   checkBoxOverdue: { borderColor: theme.colors.danger, backgroundColor: theme.colors.danger+'14' },
-  checkMark: { color: '#FFF', fontSize: 12, fontWeight: '800' as any },
+  checkMark: { color: theme.colors.onPrimary, fontSize: 12, fontWeight: '800' as any },
   checkMarkOverdue: { color: theme.colors.danger, fontSize: 12, fontWeight: '800' as any },
   msg: { ...theme.typography.bodySmall, color: theme.colors.text, fontWeight: '500' as any },
   msgDone: { textDecorationLine: 'line-through', color: theme.colors.textTertiary },

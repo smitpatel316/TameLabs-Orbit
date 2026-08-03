@@ -18,5 +18,5 @@ const styles = StyleSheet.create({
   title: { color: theme.colors.text, fontSize: 20, fontWeight: '600' as any, marginBottom: 8 },
   message: { color: theme.colors.textSecondary, fontSize: 16, textAlign: 'center', marginBottom: 24 },
   retryButton: { backgroundColor: theme.colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
-  retryText: { color: '#FFF', fontWeight: '600' as any },
+  retryText: { color: theme.colors.onPrimary, fontWeight: '600' as any },
 });

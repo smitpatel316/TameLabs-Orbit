@@ -156,7 +156,7 @@ export default function SentimentScreen({ route, navigation }: any) {
                 const col = k==='all' ? theme.colors.text : (ENERGY_LEVELS as any)[k]?.color || theme.colors.textTertiary;
                 return (
                   <TouchableOpacity key={k} style={[styles.filterChip, active && { backgroundColor: col, borderColor: col }]} onPress={()=>setEnergyFilter(k as any)} activeOpacity={0.7} accessibilityState={{ selected: active }}>
-                    <View style={[styles.chipDot, { backgroundColor: active ? '#FFF' : col }]} />
+                    <View style={[styles.chipDot, { backgroundColor: active ? theme.colors.onPrimary : col }]} />
                     <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{k}</Text>
                   </TouchableOpacity>
                 );
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: theme.borderRadius.pill, backgroundColor: theme.colors.surfaceMuted, borderWidth: 1, borderColor: theme.colors.borderLight, ...theme.shadows.chip },
   filterChipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   filterChipText: { fontSize: 11, fontWeight: '600' as any, color: theme.colors.textSecondary, textTransform: 'capitalize' as any },
-  filterChipTextActive: { color: '#FFF' },
+  filterChipTextActive: { color: theme.colors.onPrimary },
   chipDot: { width: 6, height: 6, borderRadius: 3 },
   card: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.l, padding: theme.spacing.ml, borderWidth: 1, borderColor: theme.colors.border, ...theme.shadows.card, gap: theme.spacing.s },
   cardTitle: { ...theme.typography.label, color: theme.colors.text, marginBottom: 4 },
@@ -311,6 +311,6 @@ const styles = StyleSheet.create({
   trendDate: { ...theme.typography.micro, color: theme.colors.textTertiary, width: 38 },
   trendChips: { flexDirection: 'row', gap: 4 },
   trendChip: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: theme.borderRadius.pill, backgroundColor: theme.colors.surfaceHover },
-  trendChipText: { fontSize: 9, color: '#FFF', fontWeight: '600' as any, textTransform: 'capitalize' as any },
+  trendChipText: { fontSize: 9, color: theme.colors.onPrimary, fontWeight: '600' as any, textTransform: 'capitalize' as any },
   trendSummary: { ...theme.typography.caption, color: theme.colors.textSecondary, flex: 1 },
 });

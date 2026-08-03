@@ -35,7 +35,7 @@ export default function AddInteractionScreen({ route, navigation }: any) {
   const charHint = summaryLen===0 ? `Add details — ${maxSummary} max` : summaryLen<10 ? `${10-summaryLen} more for context` : summaryLen>maxSummary*0.8 ? `${maxSummary-summaryLen} left` : `${summaryLen} chars`;
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS==='ios'?'padding':undefined} keyboardVerticalOffset={80}>
+    <View style={{ flex: 1 }}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
@@ -64,7 +64,7 @@ export default function AddInteractionScreen({ route, navigation }: any) {
             <View style={styles.row}>
               {Object.entries(ENERGY_LEVELS).map(([k,v]:any)=>
                 <TouchableOpacity key={k} style={[styles.energyChip, { borderColor: v.color }, energy===k && { backgroundColor: v.color, borderColor: v.color }]} onPress={()=>setEnergy(k)} activeOpacity={0.7} accessibilityRole="button" accessibilityState={{ selected: energy===k }}>
-                  <View style={[styles.energyDot, { backgroundColor: energy===k ? '#FFF' : v.color }]} />
+                  <View style={[styles.energyDot, { backgroundColor: energy===k ? theme.colors.onPrimary : v.color }]} />
                   <Text style={[styles.chipText, energy===k && styles.chipTextActive]}>{v.label}</Text>
                 </TouchableOpacity>
               )}
@@ -91,7 +91,7 @@ export default function AddInteractionScreen({ route, navigation }: any) {
           <View style={styles.footerNote}><Text style={styles.footerText}>Health score = recency 30% + frequency 30% + energy 35% + sentiment 5%. Nourishing interactions boost health.</Text></View>
         </ScrollView>
       </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   chip: { backgroundColor: theme.colors.surface, paddingHorizontal: theme.spacing.m, paddingVertical: theme.spacing.s, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.border, ...theme.shadows.chip },
   chipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   chipText: { ...theme.typography.caption, color: theme.colors.textSecondary, textTransform: 'capitalize' as any },
-  chipTextActive: { color: '#FFF', fontWeight: '600' as any },
+  chipTextActive: { color: theme.colors.onPrimary, fontWeight: '600' as any },
   energyChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, paddingHorizontal: theme.spacing.m, paddingVertical: 6, borderRadius: theme.borderRadius.pill, borderWidth: 1, gap: 6, ...theme.shadows.chip },
   energyDot: { width: 8, height: 8, borderRadius: 4 },
   hint: { ...theme.typography.micro, color: theme.colors.textTertiary, marginTop: theme.spacing.s, fontStyle: 'italic' as any },

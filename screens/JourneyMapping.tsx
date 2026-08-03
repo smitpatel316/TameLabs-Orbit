@@ -158,7 +158,7 @@ export default function JourneyMappingScreen({ route, navigation }: any) {
                   const col = k==='all' ? theme.colors.text : (ENERGY_LEVELS as any)[k]?.color || theme.colors.textTertiary;
                   return (
                     <TouchableOpacity key={k} style={[styles.filterChip, active && { backgroundColor: col, borderColor: col }]} onPress={()=>setEnergyFilter(k)} activeOpacity={0.7} accessibilityRole="button" accessibilityState={{ selected: active }}>
-                      <View style={[styles.chipDot, { backgroundColor: active ? '#FFF' : col }]} />
+                      <View style={[styles.chipDot, { backgroundColor: active ? theme.colors.onPrimary : col }]} />
                       <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{k}</Text>
                     </TouchableOpacity>
                   );
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: theme.borderRadius.pill, backgroundColor: theme.colors.surfaceMuted, borderWidth: 1, borderColor: theme.colors.borderLight, ...theme.shadows.chip },
   filterChipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
   filterChipText: { fontSize: 11, fontWeight: '600' as any, color: theme.colors.textSecondary, textTransform: 'capitalize' as any },
-  filterChipTextActive: { color: '#FFF' },
+  filterChipTextActive: { color: theme.colors.onPrimary },
   chipDot: { width: 6, height: 6, borderRadius: 3 },
   filterMeta: { ...theme.typography.micro, color: theme.colors.textTertiary, fontStyle: 'italic' as any },
   monthGroup: { gap: 2 },

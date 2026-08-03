@@ -43,5 +43,5 @@ const styles = StyleSheet.create({
   title: { ...theme.typography.h3, color: theme.colors.text, textAlign: 'center' },
   description: { ...theme.typography.bodySmall, color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 20, maxWidth: 300 },
   actionButton: { marginTop: theme.spacing.m, backgroundColor: theme.colors.primary, paddingHorizontal: theme.spacing.l, paddingVertical: theme.spacing.s, borderRadius: theme.borderRadius.pill },
-  actionText: { color: '#FFF', fontWeight: '600' as any, fontSize: 13 },
+  actionText: { color: theme.colors.onPrimary, fontWeight: '600' as any, fontSize: 13 },
 });

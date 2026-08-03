@@ -46,7 +46,7 @@ export const Button: React.FC<Props> = ({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant==='primary' ? '#FFF' : theme.colors.text} size="small" />
+        <ActivityIndicator color={variant==='primary' ? theme.colors.onPrimary : theme.colors.text} size="small" />
       ) : (
         <Text style={[styles.text, styles[`text_${variant}` as keyof typeof styles] as any, styles[`text_${size}` as keyof typeof styles] as any, textStyle]}>{title}</Text>
       )}
@@ -62,10 +62,10 @@ const styles = StyleSheet.create({
   primary: { backgroundColor: theme.colors.primary },
   secondary: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border },
   ghost: { backgroundColor: 'transparent' },
-  danger: { backgroundColor: '#FFF5F5', borderWidth: 1, borderColor: '#FED7D7' },
+  danger: { backgroundColor: theme.colors.dangerBg, borderWidth: 1, borderColor: theme.colors.dangerBorder },
   disabled: { opacity: 0.45 },
   text: { fontWeight: '600' as const },
-  text_primary: { color: '#FFF' },
+  text_primary: { color: theme.colors.onPrimary },
   text_secondary: { color: theme.colors.text },
   text_ghost: { color: theme.colors.text },
   text_danger: { color: theme.colors.danger },

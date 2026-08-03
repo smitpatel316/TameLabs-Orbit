@@ -227,19 +227,21 @@ export default function SettingsScreen({ navigation }: any) {
             <Text style={styles.checkRowDone}>✅ Time-ago + full date everywhere</Text>
             <Text style={styles.checkRowDone}>✅ Keyboard avoiding + dismiss + char limits</Text>
             <Text style={styles.checkRowDone}>✅ Empty states with actions</Text>
-            <Text style={styles.checkRowDone}>✅ Button/Input design system, accessibility</Text>
+            <Text style={styles.checkRowDone}>✅ Button/Input design system, accessibility + 0 raw hex token-hardened</Text>
             <Text style={styles.checkRowDone}>✅ Health score real formula (recency+energy+sentiment)</Text>
             <Text style={styles.checkRowDone}>✅ Groups full CRUD + color dots + counts + filter chips + inline pickers</Text>
             <Text style={styles.checkRowDone}>✅ Tags chip management + group badge on cards</Text>
-            <Text style={styles.checkRowDone}>✅ Import from device contacts + dedup + birthday MM/DD</Text>
-            <Text style={styles.checkRowDone}>✅ Calendar sync for birthdays 60d (expo-calendar device)</Text>
+            <Text style={styles.checkRowDone}>✅ Import from device contacts + dedup + birthday MM/DD + token-hardened checkMark</Text>
+            <Text style={styles.checkRowDone}>✅ Calendar sync for birthdays 60d (expo-calendar device) + EAS builds scaffold</Text>
+            <Text style={styles.checkRowDone}>✅ Token-hardened v2.6.4: 0 raw hex #FFF replaced with theme.colors.onPrimary</Text>
+            <Text style={styles.checkRowDone}>✅ EAS builds: eas.json dev/preview/prod + android READ_CONTACTS/READ_CALENDAR/WRITE_CALENDAR + expo-contacts/calendar plugins + bundleIdentifier com.tamelabs.orbit</Text>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.aboutText}>Orbit v2.6 — Map your relationships. Local-first, zero tracking. Health = recency 30% + frequency 30% + energy 35% + sentiment 5%. Groups: cluster contacts, filter Contacts list by group, assign in Add Contact + Detail, manage with colors + counts, Map & Insights respect groups. Tags: organize by interest. Import from phone contacts with dedup, birthdays MM/DD, calendar sync 60d with alarms. Part of TameLabs.</Text>
-          <Text style={styles.aboutVersion}>v2.6 • groups full support • {new Date().getFullYear()}</Text>
+          <Text style={styles.aboutText}>Orbit v2.6.4 — Map your relationships. Local-first, zero tracking. Health = recency 30% + frequency 30% + energy 35% + sentiment 5%. Groups: cluster contacts, filter Contacts list by group, assign in Add Contact + Detail, manage with colors + counts, Map & Insights respect groups. Tags: organize by interest. Import from phone contacts with dedup, birthdays MM/DD, calendar sync 60d with alarms. Part of TameLabs.</Text>
+          <Text style={styles.aboutVersion}>v2.6.4 • token-hardened 0 hex • EAS config • groups full support • {new Date().getFullYear()}</Text>
         </View>
 
         <View style={{ height: 24 }} />

@@ -4,6 +4,9 @@ import { useOrbitStore, GROUP_COLORS } from '../stores/orbitStore';
 import { theme, formatTimeAgo } from '../src/theme';
 import { Input } from '../src/components/Input';
 import { Button } from '../src/components/Button';
+import { GroupAnalyticsCard, computeAnalytics } from '../src/components/GroupAnalyticsCard';
+import { GroupDetailModal } from '../src/components/GroupDetailModal';
+import { buildUpcomingBirthdays } from '../src/services/calendarSync';
 import { useIdentity } from '../src/utils/useIdentity';
 import { useNavigation } from '@react-navigation/native';
 import { logger } from '../src/utils/logger';
@@ -20,6 +23,7 @@ export default function SettingsScreen({ navigation }: any) {
   const updateGroup = useOrbitStore((s) => s.updateGroup);
   const deleteGroup = useOrbitStore((s) => s.deleteGroup);
   const getGroupCounts = useOrbitStore((s) => s.getGroupCounts);
+  const calculateHealth = useOrbitStore((s) => s.calculateHealthScore);
   const { user: tameUser, provider } = useIdentity();
   const nav = useNavigation<any>();
   const [newTag, setNewTag] = useState('');
@@ -28,6 +32,7 @@ export default function SettingsScreen({ navigation }: any) {
   const [editGroupName, setEditGroupName] = useState('');
   const [editGroupColor, setEditGroupColor] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [detailGroupId, setDetailGroupId] = useState<string | null>(null);
 
   const onRefresh = useCallback(()=>{
     setRefreshing(true);
@@ -37,6 +42,21 @@ export default function SettingsScreen({ navigation }: any) {
   const groupCounts = useMemo(()=>{
     try { return getGroupCounts(); } catch { return {} as Record<string, number>; }
   }, [contacts, groups]);
+
+  const groupsAnalytics = useMemo(()=>{
+    return groups.map((g:any)=> computeAnalytics(g, contacts as any, reminders as any, calculateHealth)).sort((a,b)=> b.count - a.count);
+  }, [groups, contacts, reminders, calculateHealth]);
+
+  const upcomingBirthdaysCount = useMemo(()=>{
+    const b = buildUpcomingBirthdays(contacts.map((c:any)=>({ id: c.id, name: c.name, birthday: c.birthday })));
+    return b.length;
+  }, [contacts]);
+
+  const remindersDueCount = useMemo(()=>{
+    const now = Date.now();
+    const week = now + 7*86400000;
+    return reminders.filter((r:any)=> !r.done && new Date(r.dueDate).getTime() <= week).length;
+  }, [reminders]);
 
   const handleAddTag = () => {
     const t = newTag.trim();
@@ -81,21 +101,17 @@ export default function SettingsScreen({ navigation }: any) {
   };
 
   const handleViewGroup = (group: any) => {
-    // quick filter: navigate to ContactsList would need param, instead show members
-    const count = groupCounts[group.id]||0;
-    const memberNames = contacts.filter((c:any)=>c.groupId===group.id).map((c:any)=>c.name).slice(0,8).join(', ');
-    Alert.alert(`${group.name} • ${count} contacts`, memberNames ? `Members: ${memberNames}${count>8 ? ` +${count-8} more` : ''}` : 'No contacts in this group yet. Add contacts to this group from Add Contact or Contact Detail.', [
-      { text: 'Close', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: ()=>{
-        Alert.alert(`Delete group "${group.name}"?`, count ? `${count} contacts will lose group link but stay. Cannot be undone.` : 'Cannot be undone.', [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: ()=> {
-            deleteGroup(group.id);
-            logger.info('Settings', 'delete group', { id: group.id, count });
-          }},
-        ]);
-      }},
-    ]);
+    // open detail modal instead of plain Alert - v2.7
+    setDetailGroupId(group.id);
+  };
+
+  const handleExportGroupCSV = async (groupId: string) => {
+    try {
+      const mod: any = await import('../src/services/dataExport').catch(()=>null);
+      if (!mod) { Alert.alert('Export unavailable', 'install'); return; }
+      const res = await mod.exportGroupContacts(groupId, contacts as any, groups as any, calculateHealth);
+      Alert.alert(res.ok?'Exported':'Failed', res.msg);
+    } catch (e:any) { Alert.alert('Export error', e?.message||'Failed'); }
   };
 
   return (
@@ -148,8 +164,8 @@ export default function SettingsScreen({ navigation }: any) {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.sectionTitle}>Groups Management</Text>
-              <Text style={styles.sectionHint}>{groups.length} groups • {Object.values(groupCounts).reduce((a:number,b:any)=>a+(b as number),0)} grouped contacts • Tap to view members, ✎ edit, color, delete</Text>
+              <Text style={styles.sectionTitle}>Groups Management • v2.7 Groups Analytics Dashboard</Text>
+              <Text style={styles.sectionHint}>{groups.length} groups • {Object.values(groupCounts).reduce((a:number,b:any)=>a+(b as number),0)} grouped contacts • {upcomingBirthdaysCount} 🎂 60d • {remindersDueCount} ⏰ due • Tap to open GroupDetail modal (avatar 20 circle initial + health badge + timeAgo + energy + groupBadge + Quick Stats)</Text>
             </View>
           </View>
           <View style={styles.inputRow}>
@@ -182,11 +198,11 @@ export default function SettingsScreen({ navigation }: any) {
               }
               return (
                 <View key={g.id} style={styles.groupItemRow}>
-                  <TouchableOpacity style={styles.groupItemMain} onPress={()=>handleViewGroup(g)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`View ${g.name} group ${count} members`}>
+                  <TouchableOpacity style={styles.groupItemMain} onPress={()=>handleViewGroup(g)} onLongPress={()=>handleExportGroupCSV(g.id)} delayLongPress={400} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`View ${g.name} group ${count} members long-press export CSV`}>
                     <View style={[styles.groupDotLarge, { backgroundColor: g.color || theme.colors.primary }]} />
                     <View style={styles.groupInfo}>
                       <Text style={styles.groupText} numberOfLines={1}>{g.name}</Text>
-                      <Text style={styles.groupMeta}>{count} {count===1?'contact':'contacts'}{g.createdAt ? ` • ${formatTimeAgo(g.createdAt)}` : ''}</Text>
+                      <Text style={styles.groupMeta}>{count} {count===1?'contact':'contacts'}{g.createdAt ? ` • ${formatTimeAgo(g.createdAt)}` : ''} • long-press export CSV</Text>
                     </View>
                     <View style={styles.countPill}><Text style={styles.countText}>{count}</Text></View>
                   </TouchableOpacity>
@@ -204,24 +220,45 @@ export default function SettingsScreen({ navigation }: any) {
             })}
             {groups.length===0 ? <Text style={styles.empty}>No groups yet. Groups cluster contacts for Contacts filter • Map quadrants • Insights type breakdown. Create your first — e.g. Inner Circle, Work, Gym, Family.</Text> : null}
           </View>
-          <Text style={styles.hint}>Groups are local. Filter by group in ContactsList, see clusters in Map, assign in Add Contact & Contact Detail inline picker.</Text>
+
+          {groupsAnalytics.length>0 && (
+            <View style={{ marginTop: theme.spacing.ml, gap: theme.spacing.s }}>
+              <Text style={styles.sectionSubTitle}>Groups Analytics Dashboard • Per-group avg health, energy distribution, stale count below 70 pct health, totalGrouped, birthdays upcoming 60d count, reminders due</Text>
+              <View style={{ flexDirection: 'row', gap: theme.spacing.s }}>
+                <TouchableOpacity style={{ backgroundColor: theme.colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: theme.borderRadius.m }} onPress={()=> (navigation||nav).navigate('GroupsAnalytics')}><Text style={{ color: theme.colors.onPrimary, fontWeight: '700' as any, fontSize: 12 }}>Open Groups Analytics</Text></TouchableOpacity>
+                <TouchableOpacity style={{ backgroundColor: theme.colors.surfaceMuted, paddingHorizontal: 12, paddingVertical: 8, borderRadius: theme.borderRadius.m, borderWidth: 1, borderColor: theme.colors.border }} onPress={()=> (navigation||nav).navigate('GroupsAnalytics')}><Text style={{ color: theme.colors.text, fontWeight: '600' as any, fontSize: 12 }}>Map By Groups clusters</Text></TouchableOpacity>
+              </View>
+              {groupsAnalytics.slice(0,3).map((a:any)=>{
+                const g = groups.find((gg:any)=>gg.id===a.id);
+                if (!g) return null;
+                return <GroupAnalyticsCard key={a.id} group={g} contacts={contacts} reminders={reminders} calculateHealth={calculateHealth} onPress={(id:string)=> setDetailGroupId(id)} />;
+              })}
+              {groupsAnalytics.length>3 && <Text style={styles.hint}>+ {groupsAnalytics.length-3} more groups in full analytics → tap Open Groups Analytics</Text>}
+            </View>
+          )}
+
+          <Text style={styles.hint}>Groups are local. Filter by group in ContactsList, see clusters in Map, assign in Add Contact and Detail inline picker. v2.7: GroupDetail modal shows members FlatList avatar 20 circle initial + health badge + timeAgo + energy + groupBadge + Quick Stats. Export CSV per-group via dataExport service dynamic import.</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data Overview</Text>
+          <Text style={styles.sectionTitle}>Data Overview • Groups X•Y with members v2.7.0</Text>
           <View style={styles.row}><Text style={styles.rowLabel}>Contacts</Text><Text style={styles.rowValue}>{contacts.length}</Text></View>
           <View style={styles.row}><Text style={styles.rowLabel}>Interactions</Text><Text style={styles.rowValue}>{interactions.length}</Text></View>
-          <View style={styles.row}><Text style={styles.rowLabel}>Reminders</Text><Text style={styles.rowValue}>{reminders.length}</Text></View>
+          <View style={styles.row}><Text style={styles.rowLabel}>Reminders</Text><Text style={styles.rowValue}>{reminders.length} • {remindersDueCount} due 7d</Text></View>
           <View style={styles.row}><Text style={styles.rowLabel}>Tags</Text><Text style={styles.rowValue}>{tags.length}</Text></View>
           <View style={styles.row}><Text style={styles.rowLabel}>Groups</Text><Text style={styles.rowValue}>{groups.length} • {Object.keys(groupCounts).length} with members</Text></View>
           <View style={styles.row}><Text style={styles.rowLabel}>Grouped</Text><Text style={styles.rowValue}>{Object.values(groupCounts).reduce((a:number,b:any)=>a+(b as number),0)} contacts in groups</Text></View>
+          <View style={styles.row}><Text style={styles.rowLabel}>Birthdays 60d</Text><Text style={styles.rowValue}>{upcomingBirthdaysCount} upcoming</Text></View>
           <View style={styles.row}><Text style={styles.rowLabel}>Last updated</Text><Text style={styles.rowValue}>{contacts.length ? formatTimeAgo(contacts[0]?.createdAt || new Date().toISOString()) : 'never'}</Text></View>
           <View style={{height:8}} />
-          <Button title="Export JSON" onPress={handleExport} variant="secondary" size="s" accessibilityLabel="Export data" />
+          <View style={{ flexDirection: 'row', gap: theme.spacing.s }}>
+            <Button title="Export JSON" onPress={handleExport} variant="secondary" size="s" accessibilityLabel="Export data" />
+            <Button title="Groups Analytics" onPress={()=> (navigation||nav).navigate('GroupsAnalytics')} variant="secondary" size="s" />
+          </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quality Checklist</Text>
+          <Text style={styles.sectionTitle}>Quality Checklist • v2.7.0</Text>
           <View style={styles.checkList}>
             <Text style={styles.checkRowDone}>✅ Pull-to-refresh on all lists</Text>
             <Text style={styles.checkRowDone}>✅ Time-ago + full date everywhere</Text>
@@ -230,22 +267,29 @@ export default function SettingsScreen({ navigation }: any) {
             <Text style={styles.checkRowDone}>✅ Button/Input design system, accessibility + 0 raw hex token-hardened</Text>
             <Text style={styles.checkRowDone}>✅ Health score real formula (recency+energy+sentiment)</Text>
             <Text style={styles.checkRowDone}>✅ Groups full CRUD + color dots + counts + filter chips + inline pickers</Text>
+            <Text style={styles.checkRowDone}>✅ v2.7 Groups Analytics Dashboard: GroupAnalyticsCard per-group avg health, energy distribution, stale count below 70 pct health, totalGrouped, birthdays upcoming 60d count, reminders due</Text>
+            <Text style={styles.checkRowDone}>✅ Group Detail modal/screen: members FlatList avatar 20 circle initial + health badge + timeAgo + energy + groupBadge + Quick Stats energy levels health distribution - tap group pill/chip opens modal, long-press exports</Text>
+            <Text style={styles.checkRowDone}>✅ Map By Groups clusters enhanced + GroupsAnalyticsCard list + tap Detail modal + Open full analytics button</Text>
+            <Text style={styles.checkRowDone}>✅ CSV export for groups: exportGroupContacts(groupId) via dataExport service dynamic import expo-file-system sharing document-picker guarded web Blob URL - per-group + all-groups</Text>
             <Text style={styles.checkRowDone}>✅ Tags chip management + group badge on cards</Text>
             <Text style={styles.checkRowDone}>✅ Import from device contacts + dedup + birthday MM/DD + token-hardened checkMark</Text>
             <Text style={styles.checkRowDone}>✅ Calendar sync for birthdays 60d (expo-calendar device) + EAS builds scaffold</Text>
-            <Text style={styles.checkRowDone}>✅ Token-hardened v2.6.4: 0 raw hex #FFF replaced with theme.colors.onPrimary</Text>
+            <Text style={styles.checkRowDone}>✅ Token-hardened v2.7.0: 0 raw hex #FFF replaced with theme.colors.onPrimary - GroupAnalyticsCard + GroupDetailModal + dataExport + GroupsAnalyticsScreen .web shims</Text>
             <Text style={styles.checkRowDone}>✅ EAS builds: eas.json dev/preview/prod + android READ_CONTACTS/READ_CALENDAR/WRITE_CALENDAR + expo-contacts/calendar plugins + bundleIdentifier com.tamelabs.orbit</Text>
+            <Text style={styles.checkRowDone}>✅ Web shims: SafeAreaView→View KAV→View stripping behavior/keyboardVerticalOffset dedup imports preserve TextInput - 9 shims regen via python transform</Text>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.aboutText}>Orbit v2.6.4 — Map your relationships. Local-first, zero tracking. Health = recency 30% + frequency 30% + energy 35% + sentiment 5%. Groups: cluster contacts, filter Contacts list by group, assign in Add Contact + Detail, manage with colors + counts, Map & Insights respect groups. Tags: organize by interest. Import from phone contacts with dedup, birthdays MM/DD, calendar sync 60d with alarms. Part of TameLabs.</Text>
-          <Text style={styles.aboutVersion}>v2.6.4 • token-hardened 0 hex • EAS config • groups full support • {new Date().getFullYear()}</Text>
+          <Text style={styles.aboutText}>Orbit v2.7.0 — Map your relationships. Local-first, zero tracking. Health = recency 30% + frequency 30% + energy 35% + sentiment 5%. Groups: cluster contacts, filter Contacts list by group, assign in Add Contact + Detail, manage with colors + counts, Map and Insights respect groups. NEW v2.7: Groups Analytics Dashboard — per-group avg health, energy distribution, stale count below 70 pct health, totalGrouped, birthdays upcoming 60d count, reminders due. Group Detail modal/screen when tap group pill/chip: members FlatList avatar 20 circle initial + health badge + timeAgo + energy + groupBadge + Quick Stats energy levels health distribution. CSV export for groups per-group or all. Part of TameLabs.</Text>
+          <Text style={styles.aboutVersion}>v2.7.0 • groups analytics dashboard • group detail modal • CSV export • token-hardened 0 hex • Quality Checklist • {new Date().getFullYear()}</Text>
         </View>
 
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      <GroupDetailModal groupId={detailGroupId} onClose={()=> setDetailGroupId(null)} navigation={navigation||nav} />
     </View>
   );
 }
@@ -255,8 +299,9 @@ const styles = StyleSheet.create({
   content: { padding: theme.spacing.l, gap: theme.spacing.ml, paddingBottom: 96 },
   section: { padding: theme.spacing.ml, backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.l, borderWidth: 1, borderColor: theme.colors.border, ...theme.shadows.card, gap: theme.spacing.s },
   sectionTitle: { ...theme.typography.label, color: theme.colors.text, marginBottom: 2 },
+  sectionSubTitle: { ...theme.typography.caption, color: theme.colors.textSecondary, fontStyle: 'italic' as any, lineHeight: 14 },
   sectionHeader: { marginBottom: theme.spacing.s },
-  sectionHint: { ...theme.typography.micro, color: theme.colors.textTertiary, marginBottom: theme.spacing.s },
+  sectionHint: { ...theme.typography.micro, color: theme.colors.textTertiary, marginBottom: theme.spacing.s, lineHeight: 14 },
   inputRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: theme.spacing.s },
   tagList: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.s },
   tagChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surfaceHover, paddingHorizontal: theme.spacing.m, paddingVertical: 6, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.border, gap: 6, ...theme.shadows.chip },
@@ -287,7 +332,7 @@ const styles = StyleSheet.create({
   empty: { ...theme.typography.caption, color: theme.colors.textTertiary, fontStyle: 'italic' as any, marginTop: 4, lineHeight: 16 },
   checkList: { gap: 6, marginTop: theme.spacing.s },
   checkRow: { ...theme.typography.caption, color: theme.colors.textTertiary },
-  checkRowDone: { ...theme.typography.caption, color: theme.colors.textSecondary },
+  checkRowDone: { ...theme.typography.caption, color: theme.colors.textSecondary, lineHeight: 16 },
   aboutText: { ...theme.typography.bodySmall, color: theme.colors.textSecondary, lineHeight: 20 },
   aboutVersion: { ...theme.typography.micro, color: theme.colors.textTertiary, marginTop: theme.spacing.s },
 });

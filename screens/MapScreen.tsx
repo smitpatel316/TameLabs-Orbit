@@ -4,12 +4,15 @@ import { useOrbitStore, RELATIONSHIP_TYPES, ENERGY_LEVELS } from '../stores/orbi
 import { theme, formatTimeAgo, getHealthColor, formatDate } from '../src/theme';
 import { EmptyState } from '../src/components/EmptyState';
 import { Button } from '../src/components/Button';
+import { GroupAnalyticsCard, computeAnalytics } from '../src/components/GroupAnalyticsCard';
+import { GroupDetailModal } from '../src/components/GroupDetailModal';
+import { buildUpcomingBirthdays } from '../src/services/calendarSync';
 import { logger } from '../src/utils/logger';
 
 type QuadrantKey = 'high-high' | 'high-low' | 'low-high' | 'low-low' | 'all';
 type EnergyFilter = keyof typeof ENERGY_LEVELS | 'all';
 type TypeFilter = keyof typeof RELATIONSHIP_TYPES | 'all';
-type GroupFilter = string; // 'all' or groupId or '__none'
+type GroupFilter = string;
 
 const QUADRANTS: Record<Exclude<QuadrantKey,'all'>, { label: string; desc: string; color: string }> = {
   'high-high': { label: 'Inner Circle', desc: 'high energy + recent', color: theme.colors.health.excellent },
@@ -37,6 +40,7 @@ function classify(c: any): Exclude<QuadrantKey,'all'> {
 export default function MapScreen({ navigation }: any) {
   const contacts = useOrbitStore(s => s.contacts);
   const groups = useOrbitStore(s => s.groups);
+  const reminders = useOrbitStore(s => s.reminders);
   const getGroupCounts = useOrbitStore(s => s.getGroupCounts);
   const calculateHealthScore = useOrbitStore(s => s.calculateHealthScore);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,6 +50,7 @@ export default function MapScreen({ navigation }: any) {
   const [groupFilter, setGroupFilter] = useState<GroupFilter>('all');
   const [search, setSearch] = useState('');
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [detailGroupId, setDetailGroupId] = useState<string | null>(null);
 
   const onRefresh = useCallback(()=>{
     setRefreshing(true);
@@ -53,7 +58,7 @@ export default function MapScreen({ navigation }: any) {
     setTimeout(()=> setRefreshing(false), 600);
   }, [contacts.length]);
 
-  React.useEffect(()=>{ logger.info('MapScreen','mounted',{ v: '2.6-map-groups' }); }, []);
+  React.useEffect(()=>{ logger.info('MapScreen','mounted',{ v: '2.7.0-groups-analytics' }); }, []);
 
   const enriched = useMemo(()=>{
     return contacts.map(c=>{
@@ -107,7 +112,7 @@ export default function MapScreen({ navigation }: any) {
       { label: '60-80 good', fn: (c:any)=>c.health>=60&&c.health<80, color: theme.colors.health.good },
       { label: '40-60 okay', fn: (c:any)=>c.health>=40&&c.health<60, color: theme.colors.health.okay },
       { label: '20-40 poor', fn: (c:any)=>c.health>=20&&c.health<40, color: theme.colors.health.poor },
-      { label: '<20 critical', fn: (c:any)=>c.health<20, color: theme.colors.health.critical },
+      { label: 'under 20 critical', fn: (c:any)=>c.health<20, color: theme.colors.health.critical },
     ];
   }, []);
 
@@ -137,9 +142,13 @@ export default function MapScreen({ navigation }: any) {
   }, [filtered]);
 
   const selected = useMemo(()=> selectedContactId ? enriched.find(c=>c.id===selectedContactId) || null : null, [selectedContactId, enriched]);
-
   const clearFilters = useCallback(()=>{ setQuadrantFilter('all'); setEnergyFilter('all'); setTypeFilter('all'); setGroupFilter('all'); setSearch(''); }, []);
   const ungroupedCount = contacts.filter(c=>!c.groupId).length;
+
+  // v2.7 per-group analytics list computed for Map By Groups Analytics section
+  const groupsAnalytics = useMemo(()=>{
+    return groups.map((g:any)=> computeAnalytics(g, contacts as any, reminders as any, calculateHealthScore)).sort((a,b)=> b.count - a.count || b.avgHealth - a.avgHealth);
+  }, [groups, contacts, reminders, calculateHealthScore]);
 
   if (contacts.length===0) {
     return (
@@ -158,7 +167,7 @@ export default function MapScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.text} />} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Relationship Map</Text>
-          <Text style={styles.sub}>{filtered.length}/{contacts.length} visible - quadrants + energy + groups + search{groupedCount ? ` - ${groupedCount} grouped` : ''}</Text>
+          <Text style={styles.sub}>{filtered.length}/{contacts.length} visible - quadrants + energy + groups + search{groupedCount ? ` - ${groupedCount} grouped` : ''} - v2.7 groups analytics</Text>
         </View>
 
         {/* Detail overlay */}
@@ -176,7 +185,7 @@ export default function MapScreen({ navigation }: any) {
               <View style={[styles.healthBadge, { backgroundColor: getHealthColor(selected.health) }]}><Text style={styles.healthBadgeText}>{selected.health}%</Text></View>
               <View style={[styles.quadChip, { borderColor: QUADRANTS[selected.quad].color }]}><Text style={[styles.quadChipText, { color: QUADRANTS[selected.quad].color }]}>{QUADRANTS[selected.quad].label}</Text></View>
               {selected.groupId && groupMap[selected.groupId] ? (
-                <View style={[styles.groupPill, { borderColor: groupMap[selected.groupId].color || theme.colors.border }]}><View style={[styles.groupDotSmall, { backgroundColor: groupMap[selected.groupId].color || theme.colors.textTertiary }]} /><Text style={styles.groupPillText}>{groupMap[selected.groupId].name}</Text></View>
+                <TouchableOpacity style={[styles.groupPill, { borderColor: groupMap[selected.groupId].color || theme.colors.border }]} onPress={()=>setDetailGroupId(selected.groupId || null)}><View style={[styles.groupDotSmall, { backgroundColor: groupMap[selected.groupId].color || theme.colors.textTertiary }]} /><Text style={styles.groupPillText}>{groupMap[selected.groupId].name}</Text></TouchableOpacity>
               ) : null}
               <Text style={styles.detailDesc}>{QUADRANTS[selected.quad].desc}</Text>
             </View>
@@ -223,14 +232,14 @@ export default function MapScreen({ navigation }: any) {
           </ScrollView>
           {groups.length > 0 && (
             <>
-              <Text style={[styles.filterLabel, { marginTop: 8 }]}>Groups {groupFilter!=='all' ? `(${groupMap[groupFilter]?.name || 'No group'})` : ''} - {groups.length} total</Text>
+              <Text style={[styles.filterLabel, { marginTop: 8 }]}>Groups {groupFilter!=='all' ? `(${groupMap[groupFilter]?.name || 'No group'})` : ''} - {groups.length} total • tap pill to open GroupDetail analytics modal</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
                 <TouchableOpacity style={[styles.chip, groupFilter==='all' && styles.chipActive]} onPress={()=>setGroupFilter('all')} accessibilityRole="button" accessibilityState={{ selected: groupFilter==='all' }}><Text style={[styles.chipText, groupFilter==='all' && styles.chipTextActive]}>All {contacts.length}</Text></TouchableOpacity>
                 {groups.map((g:any)=>{
                   const count = groupCounts[g.id] || 0;
                   const active = groupFilter===g.id;
                   return (
-                    <TouchableOpacity key={g.id} style={[styles.chip, { borderColor: active ? g.color : theme.colors.border }, active && { backgroundColor: g.color }]} onPress={()=>setGroupFilter(active ? 'all' : g.id)} accessibilityRole="button" accessibilityState={{ selected: active }} accessibilityLabel={`Filter group ${g.name}`}>
+                    <TouchableOpacity key={g.id} style={[styles.chip, { borderColor: active ? g.color : theme.colors.border }, active && { backgroundColor: g.color }]} onPress={()=>{ if(active) { setGroupFilter('all'); } else { setGroupFilter(g.id); } }} onLongPress={()=>setDetailGroupId(g.id)} delayLongPress={350} accessibilityRole="button" accessibilityState={{ selected: active }} accessibilityLabel={`Filter group ${g.name} long-press for analytics`}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                         <View style={[styles.groupDotSmall, { backgroundColor: active ? theme.colors.onPrimary : g.color }]} />
                         <Text style={[styles.chipText, active && { color: theme.colors.onPrimary }]}>{g.name}</Text>
@@ -293,11 +302,11 @@ export default function MapScreen({ navigation }: any) {
           <View style={styles.axisRowVertical} />
         </View>
 
-        {/* By Groups clusters - new v2.6.1 */}
+        {/* By Groups clusters - v2.7 enhanced with GroupAnalyticsCard */}
         {groups.length > 0 && filtered.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>By Groups - {Object.keys(byGroup).filter(k=>k!=='__none').length} groups - {filtered.filter(c=>c.groupId).length} grouped</Text>
-            <Text style={styles.cardHint}>Groups cluster your Map - tap bubble for details - filter above to isolate group</Text>
+            <Text style={styles.cardTitle}>By Groups • {Object.keys(byGroup).filter(k=>k!=='__none').length} groups • {filtered.filter(c=>c.groupId).length} grouped • v2.7 analytics</Text>
+            <Text style={styles.cardHint}>Groups cluster your Map - tap pill for detail modal (avatar 20 + health badge + timeAgo + energy + Quick Stats) • Tap group chip to filter • Long-press chip for analytics modal</Text>
             {Object.entries(byGroup).filter(([gid])=> gid!=='__none').map(([gid, list]: any)=>{
               const g = groupMap[gid];
               if (!g) return null;
@@ -310,7 +319,7 @@ export default function MapScreen({ navigation }: any) {
                     <View style={[styles.groupDot, { backgroundColor: g.color }]} />
                     <Text style={styles.groupTitle}>{g.name} - {list.length}</Text>
                     <Text style={styles.groupAvg}>avg {avg}%</Text>
-                    <View style={[styles.groupActiveHint, isActive && { backgroundColor: g.color }]}><Text style={[styles.groupActiveHintText, isActive && { color: theme.colors.onPrimary }]}>{isActive ? 'filtered' : 'tap to filter'}</Text></View>
+                    <TouchableOpacity style={[styles.groupActiveHint, isActive && { backgroundColor: g.color }]} onPress={()=>setDetailGroupId(gid)}><Text style={[styles.groupActiveHintText, isActive && { color: theme.colors.onPrimary }]}>Detail</Text></TouchableOpacity>
                   </TouchableOpacity>
                   <View style={styles.bubbleRow}>
                     {list.slice(0,20).map((c:any)=>
@@ -344,6 +353,26 @@ export default function MapScreen({ navigation }: any) {
             {Object.keys(byGroup).filter(k=>k!=='__none').length===0 && (
               <Text style={styles.emptyGroupHint}>No grouped contacts yet - assign groups in ContactsList or AddContact to cluster here</Text>
             )}
+          </View>
+        )}
+
+        {/* v2.7 Groups Analytics Cards - per-group avg health, energy distribution, stale count, birthdays 60d, reminders due */}
+        {groupsAnalytics.length > 0 && (
+          <View style={styles.card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={styles.cardTitle}>Groups Analytics Dashboard • v2.7 • {groupsAnalytics.length} groups</Text>
+              <TouchableOpacity onPress={()=> navigation.navigate('GroupsAnalytics')} style={{ backgroundColor: theme.colors.surfaceHover, paddingHorizontal: 10, paddingVertical: 4, borderRadius: theme.borderRadius.pill, borderWidth: 1, borderColor: theme.colors.border }}><Text style={{ fontSize: 11, color: theme.colors.textSecondary, fontWeight: '600' as any }}>Open full</Text></TouchableOpacity>
+            </View>
+            <Text style={styles.cardHint}>Per-group avg health, energy distribution, stale count {'below 70 pct health'}, totalGrouped, birthdays upcoming 60d count, reminders due • tap card for GroupDetail modal</Text>
+            <View style={{ gap: theme.spacing.s, marginTop: theme.spacing.s }}>
+              {groupsAnalytics.map((ga: any)=>{
+                const g = groups.find((gg:any)=>gg.id===ga.id);
+                if (!g) return null;
+                return (
+                  <GroupAnalyticsCard key={ga.id} group={g as any} contacts={contacts as any} reminders={reminders as any} calculateHealth={calculateHealthScore} onPress={(id:string)=> setDetailGroupId(id)} />
+                );
+              })}
+            </View>
           </View>
         )}
 
@@ -459,6 +488,8 @@ export default function MapScreen({ navigation }: any) {
 
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      <GroupDetailModal groupId={detailGroupId} onClose={()=> setDetailGroupId(null)} navigation={navigation} />
     </View>
     </TouchableWithoutFeedback>
   );
@@ -470,7 +501,7 @@ const styles = StyleSheet.create({
   content: { padding: theme.spacing.l, gap: theme.spacing.ml },
   header: { alignItems: 'center', gap: 4, paddingVertical: theme.spacing.m },
   title: { ...theme.typography.h1, color: theme.colors.text },
-  sub: { ...theme.typography.caption, color: theme.colors.textSecondary },
+  sub: { ...theme.typography.caption, color: theme.colors.textSecondary, textAlign: 'center' as any },
 
   detailCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.l, padding: theme.spacing.ml, borderWidth: 1.5, borderColor: theme.colors.primary, ...theme.shadows.modal, gap: theme.spacing.s },
   detailHeader: { flexDirection: 'row', gap: theme.spacing.m, alignItems: 'center' },

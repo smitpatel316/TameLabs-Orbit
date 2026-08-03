@@ -1,28 +1,24 @@
-import { format, formatDistanceToNow } from 'date-fns';
-
-export const formatTimeAgo = (dateString: string | null) => {
-  if (!dateString) return 'Never';
+import { MONTHS } from '../theme';
+export function formatDate(iso: string | null): string {
+  if (!iso) return 'never';
   try {
-    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
-  } catch (e) {
-    return 'Invalid date';
-  }
-};
-
-export const formatDate = (dateString: string | null) => {
-  if (!dateString) return 'N/A';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return 'never';
+    return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  } catch { return 'never'; }
+}
+export function formatTimeAgo(iso: string | null): string {
+  if (!iso) return 'never';
   try {
-    return format(new Date(dateString), 'MMM d, yyyy');
-  } catch (e) {
-    return 'Invalid date';
-  }
-};
-
-export const formatFullDate = (dateString: string | null) => {
-  if (!dateString) return 'N/A';
-  try {
-    return format(new Date(dateString), 'EEEE, MMMM d, yyyy');
-  } catch (e) {
-    return 'Invalid date';
-  }
-};
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff/60000);
+    if (mins < 1) return 'now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins/60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs/24);
+    if (days < 30) return `${days}d ago`;
+    const mo = Math.floor(days/30);
+    return `${mo}mo ago`;
+  } catch { return 'never'; }
+}

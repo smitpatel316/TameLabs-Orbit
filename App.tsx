@@ -14,6 +14,7 @@ import RemindersScreen from './screens/RemindersScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import ImportContactsScreen from './screens/ImportContactsScreen';
 import AuthScreen from './screens/AuthScreen';
+import GroupsAnalyticsScreen from './screens/GroupsAnalyticsScreen';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { IdentityProvider as TameIdentityProvider } from './src/utils/useIdentity';
 import { logger } from './src/utils/logger';
@@ -36,6 +37,7 @@ function ContactsStack() {
       <Stack.Screen name="AddInteraction" component={AddInteractionScreen} options={{ title: 'Log Interaction' }} />
       <Stack.Screen name="ImportContacts" component={ImportContactsScreen} options={{ title: 'Import Contacts' }} />
       <Stack.Screen name="Auth" component={AuthScreen} options={{ title: 'Tame ID' }} />
+      <Stack.Screen name="GroupsAnalytics" component={GroupsAnalyticsScreen} options={{ title: 'Groups Analytics' }} />
     </Stack.Navigator>
   );
 }

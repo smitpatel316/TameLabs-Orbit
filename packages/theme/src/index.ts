@@ -120,6 +120,15 @@ export const RELATIONSHIP_COLORS: Record<string, string> = {
   acquaintance: '#6B7280',
 };
 
+export const HUBBLE_CATEGORY_COLORS: Record<string, string> = {
+  social: '#E53E3E',
+  work: '#3182CE',
+  dating: '#D53F8C',
+  health: '#38A169',
+  finance: '#D69E2E',
+  other: '#718096',
+} as const;
+
 export function getHealthColor(h: number): string {
   if (h>=80) return theme.health.excellent;
   if (h>=60) return theme.health.good;

@@ -241,7 +241,7 @@ export default function SettingsScreen({ navigation }: any) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data Overview • Groups X•Y with members v2.7.0</Text>
+          <Text style={styles.sectionTitle}>Data Overview • Groups X•Y with members v2.7.1</Text>
           <View style={styles.row}><Text style={styles.rowLabel}>Contacts</Text><Text style={styles.rowValue}>{contacts.length}</Text></View>
           <View style={styles.row}><Text style={styles.rowLabel}>Interactions</Text><Text style={styles.rowValue}>{interactions.length}</Text></View>
           <View style={styles.row}><Text style={styles.rowLabel}>Reminders</Text><Text style={styles.rowValue}>{reminders.length} • {remindersDueCount} due 7d</Text></View>
@@ -258,7 +258,7 @@ export default function SettingsScreen({ navigation }: any) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quality Checklist • v2.7.0</Text>
+          <Text style={styles.sectionTitle}>Quality Checklist • v2.7.1</Text>
           <View style={styles.checkList}>
             <Text style={styles.checkRowDone}>✅ Pull-to-refresh on all lists</Text>
             <Text style={styles.checkRowDone}>✅ Time-ago + full date everywhere</Text>
@@ -274,7 +274,7 @@ export default function SettingsScreen({ navigation }: any) {
             <Text style={styles.checkRowDone}>✅ Tags chip management + group badge on cards</Text>
             <Text style={styles.checkRowDone}>✅ Import from device contacts + dedup + birthday MM/DD + token-hardened checkMark</Text>
             <Text style={styles.checkRowDone}>✅ Calendar sync for birthdays 60d (expo-calendar device) + EAS builds scaffold</Text>
-            <Text style={styles.checkRowDone}>✅ Token-hardened v2.7.0: 0 raw hex #FFF replaced with theme.colors.onPrimary - GroupAnalyticsCard + GroupDetailModal + dataExport + GroupsAnalyticsScreen .web shims</Text>
+            <Text style={styles.checkRowDone}>✅ Token-hardened v2.7.1: 0 raw hex #FFF replaced with theme.colors.onPrimary - ContactsList 4-dim filter (search+tag+group+type) + EmptyState component + typeChip colored + count pills + meta hint activeCount + time-ago + pull-to-refresh - GroupAnalyticsCard + GroupDetailModal + dataExport + GroupsAnalyticsScreen .web shims</Text>
             <Text style={styles.checkRowDone}>✅ EAS builds: eas.json dev/preview/prod + android READ_CONTACTS/READ_CALENDAR/WRITE_CALENDAR + expo-contacts/calendar plugins + bundleIdentifier com.tamelabs.orbit</Text>
             <Text style={styles.checkRowDone}>✅ Web shims: SafeAreaView→View KAV→View stripping behavior/keyboardVerticalOffset dedup imports preserve TextInput - 9 shims regen via python transform</Text>
           </View>
@@ -282,8 +282,8 @@ export default function SettingsScreen({ navigation }: any) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.aboutText}>Orbit v2.7.0 — Map your relationships. Local-first, zero tracking. Health = recency 30% + frequency 30% + energy 35% + sentiment 5%. Groups: cluster contacts, filter Contacts list by group, assign in Add Contact + Detail, manage with colors + counts, Map and Insights respect groups. NEW v2.7: Groups Analytics Dashboard — per-group avg health, energy distribution, stale count below 70 pct health, totalGrouped, birthdays upcoming 60d count, reminders due. Group Detail modal/screen when tap group pill/chip: members FlatList avatar 20 circle initial + health badge + timeAgo + energy + groupBadge + Quick Stats energy levels health distribution. CSV export for groups per-group or all. Part of TameLabs.</Text>
-          <Text style={styles.aboutVersion}>v2.7.0 • groups analytics dashboard • group detail modal • CSV export • token-hardened 0 hex • Quality Checklist • {new Date().getFullYear()}</Text>
+          <Text style={styles.aboutText}>Orbit v2.7.1 — Map your relationships. Local-first, zero tracking. Health = recency 30% + frequency 30% + energy 35% + sentiment 5%. Groups: cluster contacts, filter Contacts list by group, assign in Add Contact + Detail, manage with colors + counts, Map and Insights respect groups. NEW v2.7: Groups Analytics Dashboard — per-group avg health, energy distribution, stale count below 70 pct health, totalGrouped, birthdays upcoming 60d count, reminders due. Group Detail modal/screen when tap group pill/chip: members FlatList avatar 20 circle initial + health badge + timeAgo + energy + groupBadge + Quick Stats energy levels health distribution. CSV export for groups per-group or all. NEW v2.7.1: ContactsList 4-dim filter complete (search+tag+group+type) + type chips colored emoji+label+count + EmptyState component + activeFilterCount meta hint + Clear all. Part of TameLabs.</Text>
+          <Text style={styles.aboutVersion}>v2.7.1 • contacts 4-dim filter + type chips + EmptyState + groups analytics dashboard • group detail modal • CSV export • token-hardened 0 hex • Quality Checklist • {new Date().getFullYear()}</Text>
         </View>
 
         <View style={{ height: 24 }} />
